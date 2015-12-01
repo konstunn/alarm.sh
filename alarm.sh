@@ -15,6 +15,8 @@
 # select display (in case of starting gui apps)
 export DISPLAY=:0
 
+PLAYER="/usr/bin/audacious"
+
 # TODO: make audio track changing more comfortable
 # although using YouCompleteMe is rather comfortable
 TRACK="/home/konstunn/Music/Frank Sinatra - Fly Me To The Moon.mp3"
@@ -26,9 +28,9 @@ export LC_TIME=en_US.utf8
 
 while [ true ] 
 do 
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): starting audacious coproc..." >> ~/alarm.log
-	coproc audacious -p -h "$TRACK" 
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): audacious coproc started" >> ~/alarm.log
+	echo "$(date +'%b %d %T') $(hostname) $(basename $0): starting $(basename $PLAYER) coproc..." >> ~/alarm.log
+	coproc $PLAYER -p -h "$TRACK" 
+	echo "$(date +'%b %d %T') $(hostname) $(basename $0): $(basename $PLAYER) coproc started" >> ~/alarm.log
 
 	# TODO: improve robustness
 	sleep 5 
@@ -56,7 +58,7 @@ do
 
 	# TODO: may insert while loop checking if audacious is playing the track 
 	# if yes, wait until it dies or stops, otherwise timeout for 5 minutes 
-	wait $(pidof audacious) 
+	wait $(pidof $(basename $PLAYER)) 
 	echo "$(date +'%b %d %T') $(hostname) $(basename $0): audacious was killed" >> ~/alarm.log
 
 	notify-send OK "I WILL WAKE YOU UP AFTER $TIMEOUT ..."
