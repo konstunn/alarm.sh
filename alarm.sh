@@ -46,8 +46,9 @@ do
 		echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: playlist repeat status is off" >> ~/alarm.log
 		audtool --playlist-repeat-toggle  # using audtool is not reliable
 		echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: playlist repeat status is set to on" >> ~/alarm.log    
+	else
+		echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: playlist repeat status is on" >> ~/alarm.log
 	fi
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: playlist repeat status is on" >> ~/alarm.log
 
 	echo "$(date +'%b %d %T') $(hostname) $(basename $0): pactl: setting the sound volume..." >> ~/alarm.log
 	## set volume with pactl (pulseaudio control utility)
