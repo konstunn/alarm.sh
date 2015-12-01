@@ -26,13 +26,16 @@ SOUND_VOLUME="56"
 
 export LC_TIME=en_US.utf8
 
+echo "$(date +'%b %d %T') $(hostname) $(basename $0) started."
+
 while [ true ] 
 do 
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): starting $(basename $PLAYER) coproc..." >> ~/alarm.log
+	echo "$(date +'%b %d %T') $(hostname) $(basename $0): starting $(basename $PLAYER) coproc ..." >> ~/alarm.log
 	coproc $PLAYER -p -h "$TRACK" 
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): $(basename $PLAYER) coproc started" >> ~/alarm.log
+	echo "$(date +'%b %d %T') $(hostname) $(basename $0): $(basename $PLAYER) coproc started." >> ~/alarm.log
 
 	# TODO: improve robustness
+
 	sleep 5 
 	
 	# bug: repeat is being reset
@@ -40,30 +43,30 @@ do
 	# maybe it is fixed with setting repeat in gui last time (yes, it is really so)
 	# so setting it by default this way
 
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: checking playlist repeat status..." >> ~/alarm.log
+	echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: checking playlist repeat status ..." >> ~/alarm.log
 	if [[ $(audtool --playlist-repeat-status) -eq "off" ]]
 	then
-		echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: playlist repeat status is off" >> ~/alarm.log
+		echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: playlist repeat status is off." >> ~/alarm.log
 		audtool --playlist-repeat-toggle  # using audtool is not reliable
-		echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: playlist repeat status is set to on" >> ~/alarm.log    
+		echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: playlist repeat status is set to on." >> ~/alarm.log    
 	else
-		echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: playlist repeat status is on" >> ~/alarm.log
+		echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: playlist repeat status is on." >> ~/alarm.log
 	fi
 
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): pactl: setting the sound volume..." >> ~/alarm.log
+	echo "$(date +'%b %d %T') $(hostname) $(basename $0): pactl: setting the sound volume ..." >> ~/alarm.log
 	## set volume with pactl (pulseaudio control utility)
 	pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo $SOUND_VOLUME%
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): pactl: sound volume is set" >> ~/alarm.log
+	echo "$(date +'%b %d %T') $(hostname) $(basename $0): pactl: sound volume is set." >> ~/alarm.log
 	#
 	#audtool --set-volume $SOUND_VOLUME # was not reliable
 
 	# TODO: may insert while loop checking if audacious is playing the track 
 	# if yes, wait until it dies or stops, otherwise timeout for 5 minutes 
 	wait $(pidof $(basename $PLAYER)) 
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): audacious was killed" >> ~/alarm.log
+	echo "$(date +'%b %d %T') $(hostname) $(basename $0): audacious was killed." >> ~/alarm.log
 
 	notify-send OK "I WILL WAKE YOU UP AFTER $TIMEOUT ..."
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): gone to sleep for $TIMEOUT" >> ~/alarm.log
+	echo "$(date +'%b %d %T') $(hostname) $(basename $0): gone to sleep for $TIMEOUT ..." >> ~/alarm.log
 	sleep $TIMEOUT
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): $TIMEOUT is over" >> ~/alarm.log 
+	echo "$(date +'%b %d %T') $(hostname) $(basename $0): $TIMEOUT is over." >> ~/alarm.log 
 done
