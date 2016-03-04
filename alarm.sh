@@ -5,11 +5,10 @@
 # - integrate crontab into this script using 'sed'
 # - add debug feature to "simulate" execution (dry-run)
 # - replace audacious with more reliable audio player
-# - add debug feature to simulate action
 
 # NOTES:
 # - audtool is not reliable (report audacious bug)
-# - beware of light-locker blocking the audio player
+# - beware of light-locker blocking the audio player (bullshit)
 
 # BUGS: damn audacious seems to catch deadlock sometimes
 # - repeat is being reset
@@ -34,51 +33,59 @@ TRACK="/home/konstunn/Music/Delinquent Habits - Return Of The Tres (Instrumental
 LOG_FILE="./alarm.log"
 
 TIMEOUT="5m" 
-SOUND_VOLUME="58"
+SOUND_VOLUME="50"
 
 export LC_TIME=en_US.utf8
 
-echo "$(date +'%b %d %T') $(hostname) $(basename $0) started." >> $LOG_FILE
+function log {
+	echo "$(date +'%b %d %T') localhost$2 $(basename $0)$1" >> $LOG_FILE 
+}
+
+log " started." ":"
 
 while [ true ] 
 do 
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): starting $(basename $PLAYER) ..." >> $LOG_FILE
-	$PLAYER -V -p -h "$TRACK" 2>&1 | tee -a $LOG_FILE &
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): $(basename $PLAYER) started." >> $LOG_FILE
+	log ": starting $(basename $PLAYER) ..."
+	#$PLAYER -V -p -h "$TRACK" 2>&1 | tee -a $LOG_FILE &
+	$PLAYER -p -h "$TRACK" 2>&1 | tee -a $LOG_FILE &
+	log ": $(basename $PLAYER) started."
 
-	# TODO: improve robustness
+	# take a break before call audtool
 	sleep 5 
 	
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: checking playlist repeat status ..." >> $LOG_FILE
+	log ": audtool: checking playlist repeat status ..."
 	if [[ $(audtool --playlist-repeat-status) -eq "off" ]]
 	then
-		echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: playlist repeat status is off." >> $LOG_FILE
+		log ": audtool: playlist repeat status is off."
 		audtool --playlist-repeat-toggle  # note: audtool is not reliable
-		echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: playlist repeat status is set to on." >> $LOG_FILE 
+		log ": audtool: playlist repeat status is set to on."
 	else
-		echo "$(date +'%b %d %T') $(hostname) $(basename $0): audtool: playlist repeat status is on." >> $LOG_FILE 
+		log ": audtool playlist repeat status is on."
 	fi
 
 	# TODO: track sound volume
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): pactl: setting the sound volume ..." >> $LOG_FILE 
-	## set volume with pactl (pulseaudio control utility) - seems to be reliable this time
+
+	log ": pactl: setting the sound volume ..." 
+
+	# global sound adjustment command 
 	pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo $SOUND_VOLUME%
+
 	#audtool --set-volume $SOUND_VOLUME # was not reliable
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): pactl: sound volume is set." >> $LOG_FILE
+	log ": pactl: sound volume is set."
 
 	# TODO: may insert while loop checking if player is playing the track 
 	# if yes, wait until it dies or stops and then timeout for 5 minutes 
 
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): wait for player to be killed..." >> $LOG_FILE
+	log ": waiting for player to be killed ..."
 
 	wait $(pidof $(basename $PLAYER)) 
 
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): player was killed." >> $LOG_FILE 
+	log ": player was killed."
 
 	# TODO: make smth else more interesting (window or smth)
 	notify-send OK "I WILL WAKE YOU UP AFTER $TIMEOUT ..."
 
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): gone to sleep for $TIMEOUT ..." >> $LOG_FILE
+	log ": gone to sleep for $TIMEOUT ..."
 	sleep $TIMEOUT
-	echo "$(date +'%b %d %T') $(hostname) $(basename $0): $TIMEOUT is over." >> $LOG_FILE 
+	log ": $TIMEOUT is over."
 done
