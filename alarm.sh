@@ -1,10 +1,8 @@
 #!/bin/bash
 
-# TODO: 
-# - integrate rtcwake into this script
-# - integrate crontab into this script using 'sed'
-# - add debug feature to "simulate" execution (dry-run)
-# - replace audacious with more reliable audio player
+# TODO:
+#	- add debug feature to "simulate" execution (dry-run)
+#	- replace audacious with more reliable audio player
 
 # NOTES:
 # - audtool is not reliable (report audacious bug)
@@ -33,7 +31,7 @@ TRACK="/home/konstunn/Music/Delinquent Habits - Return Of The Tres (Instrumental
 LOG_FILE="./alarm.log"
 
 TIMEOUT="5m" 
-SOUND_VOLUME="50"
+SOUND_VOLUME="58"
 
 export LC_TIME=en_US.utf8
 
@@ -41,13 +39,52 @@ function log {
 	echo "$(date +'%b %d %T') localhost$2 $(basename $0)$1" >> $LOG_FILE 
 }
 
+
+if [ $# == 1 ] ; then
+	# config mode
+
+	# check $1 for valid time value
+	if ! [[ $1 =~ ^[0-9]{1,2}:[0-9]{2}$ ]] ; then
+		echo invalid alarm time '$1'
+		echo Terminating...
+		exit 1
+	fi
+
+	# extract minutes and hours from $1
+	HOURS=$(echo $1 | awk -F':' '{print $1}')
+	MINUTES=$(echo $1 | awk -F':' '{print $2}')
+
+	DT_MIN=5
+
+	# unix time for rtcwake
+	WAKE_TIME=$((`date -d "$1" +%s` - $DT_MIN*60))
+
+	# set alarm time in crontab
+	crontab -l | sed -e "/alarm.sh$/s/[^ \t]\{1,2\}/$MINUTES/1" \
+					 -e	"/alarm.sh$/s/[^ \t]\{1,2\}/$HOURS/2"  | crontab -
+
+	rtcwake -m no -t $WAKE_TIME
+
+	exit 0
+
+else
+	if [ $# -gt 1 ] ; then
+		echo unsupported mode, argc should be 1 or 0
+		echo Terminating...
+		exit 1
+	fi
+fi
+
+
+# alarm mode
+
 log " started." ":"
 
-while [ true ] 
+while true
 do 
 	log ": starting $(basename $PLAYER) ..."
-	#$PLAYER -V -p -h "$TRACK" 2>&1 | tee -a $LOG_FILE &
-	$PLAYER -p -h "$TRACK" 2>&1 | tee -a $LOG_FILE &
+	$PLAYER -V -p -h "$TRACK" 2>&1 | tee -a $LOG_FILE &
+	#$PLAYER -p -h "$TRACK" 2>&1 | tee -a $LOG_FILE &
 	log ": $(basename $PLAYER) started."
 
 	# take a break before call audtool
@@ -78,7 +115,10 @@ do
 
 	log ": waiting for player to be killed ..."
 
-	wait $(pidof $(basename $PLAYER)) 
+	sleep 5m	# temporary audacious deadlock workaround
+	killall audacious
+
+	#wait $(pidof $(basename $PLAYER))
 
 	log ": player was killed."
 
