@@ -40,13 +40,13 @@ function log {
 }
 
 
+# alarm time set mode
 if [ $# == 1 ] ; then
-	# config mode
 
 	# check $1 for valid time value
 	if ! [[ $1 =~ ^[0-9]{1,2}:[0-9]{2}$ ]] ; then
-		echo invalid alarm time '$1'
-		echo Terminating...
+		echo $(basename $0): invalid alarm time '$1'
+		echo $(basename $0): terminating...
 		exit 1
 	fi
 
@@ -59,18 +59,34 @@ if [ $# == 1 ] ; then
 	# unix time for rtcwake
 	WAKE_TIME=$((`date -d "$1" +%s` - $DT_MIN*60))
 
+	# robust way
+	SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/"$(basename $0)"
+
 	# set alarm time in crontab
-	crontab -l | sed -e "/alarm.sh$/s/[^ \t]\{1,2\}/$MINUTES/1" \
-					 -e	"/alarm.sh$/s/[^ \t]\{1,2\}/$HOURS/2"  | crontab -
+	crontab -l | grep -q "alarm.sh$"
+
+	if [ $? == 0 ] ; then
+		# if string exists, substitute time
+		crontab -l | sed -e "/alarm.sh$/s/[^ \t]\{1,2\}/$MINUTES/1" \
+						 -e	"/alarm.sh$/s/[^ \t]\{1,2\}/$HOURS/2"  | crontab -
+	else
+		# if that string does not exist yet, insert it
+		crontab -l | sed -e "\$a\\\t$MINUTES\t$HOURS\t\*\t\*\t\*\t$SELF_PATH\n" | crontab -
+	fi
 
 	rtcwake -m no -t $WAKE_TIME
+
+	if [ $? ] ; then
+		echo $(basename $0): rtcwake time was not set
+	fi
 
 	exit 0
 
 else
 	if [ $# -gt 1 ] ; then
-		echo unsupported mode, argc should be 1 or 0
-		echo Terminating...
+		echo $(basename $0): unsupported mode, argc should be 1 or 0
+		# TODO: print help
+		echo $(basename $0): terminating...
 		exit 1
 	fi
 fi
