@@ -35,19 +35,29 @@ LOG_FILE="./alarm.log"
 TIMEOUT="5m" 
 SOUND_VOLUME="58"
 
-export LC_TIME=en_US.utf8
+PLAY_NOW="0"
+
+export LC_TIME="en_US.utf8"
 
 function log {
 	echo "$(date +'%b %d %T') localhost$2 $(basename $0)$1" >> $LOG_FILE 
 }
 
-# TODO: parse command line arguments
+function print_help {
+	echo -e "\nUsage:\n `basename $0` [options]"
+	echo -e "\nOptions: \
+		\n --track  <track> (Default: \"-\") \
+		\n --time   <time>  (Default: \"-\") \
+		\n --play-now | -p  \
+		\n --help | -h \n"
+}
 
-# alarm time set mode
-if [ $# == 1 ] ; then
-
-	# check $1 for valid time value
+# TODO: add disabling feature
+# sets rtcwake and cron job time
+function set_time {
 	if ! [[ $1 =~ ^[0-9]{1,2}:[0-9]{2}$ ]] ; then
+	# check $1 for valid time value
+		# TODO: redirect to stderr ?
 		echo $(basename $0): invalid alarm time '$1'
 		echo $(basename $0): terminating...
 		exit 1
@@ -67,35 +77,67 @@ if [ $# == 1 ] ; then
 
 	# TODO add support for more than one alarm jobs
 	# set alarm time in crontab
-	crontab -l | grep -q "alarm.sh$"
+	crontab -l | grep -q "alarm.sh"
 
 	if [ $? == 0 ] ; then
 		# if string exists, substitute time
-		crontab -l | sed -e "/alarm.sh$/s/[^ \t]\{1,2\}/$MINUTES/1" \
-						 -e	"/alarm.sh$/s/[^ \t]\{1,2\}/$HOURS/2"  | crontab -
+		crontab -l | sed -e "/alarm.sh/s/[^ \t]\{1,2\}/$MINUTES/1" \
+						 -e	"/alarm.sh/s/[^ \t]\{1,2\}/$HOURS/2"  | crontab -
 	else
 		# if that string does not exist yet, insert it
-		crontab -l | sed -e "\$a\\\t$MINUTES\t$HOURS\t\*\t\*\t\*\t$SELF_PATH\n" | crontab -
+		crontab -l | sed -e "\$a\\\t$MINUTES\t$HOURS\t\*\t\*\t\*\t$SELF_PATH -p\n" | crontab -
 	fi
 
 	# TODO: check if it is already set,
 	# if yes, compare. if set later, set new,
 	# else leave it
 	sudo rtcwake -m no -t $WAKE_TIME
+}
 
-	exit 0
+# TODO: parse command line arguments
 
-else
-	if [ $# -gt 1 ] ; then
-		echo $(basename $0): unsupported mode, argc should be 1 or 0
-		# TODO: print help
-		echo $(basename $0): terminating...
-		exit 1
-	fi
+OPTS="+h,p"
+LONG_OPTS="help,track:,time:,play-now"
+
+if [ $# == 0 ] ; then # TODO: redirect to stderr ?
+	echo "`basename $0`: no options specified"
+	echo "`basename $0`: for list of options specify '--help' or '-h' option."
+	echo "`basename $0`: terminating..."
+	exit 1 
 fi
 
+ARGS=`getopt -o '+h,p' --long "$LONG_OPTS" \
+     -n $(basename $0) -- "$@"`
 
-# alarm mode
+if [ $? != 0 ] ; then # TODO: redirect to stderr ?
+	echo "`basename $0`: specify '--help' or '-h' option for help."
+	echo "`basename $0`: terminating..."
+	exit 1
+fi
+
+eval set -- "$ARGS"
+
+while true ; do
+	case "$1" in
+		--play-now | -p)	PLAY_NOW=1 ; shift 1 ;;
+		--time)				set_time $2 ; shift 2 ;;
+		# TODO: write track to config file
+		--track)		TRACK="$2" ; PLAY_NOW=1 ; shift 2 ;;
+		--help | -h)	print_help; exit 0 ;;
+		--)				shift ; break ;;
+	esac
+done
+
+if [ $# -gt 0 ] ; then # TODO: redirect to stderr ?
+	echo "`basename $0`: extra arguments \"$@\""
+	echo "`basename $0`: specify '--help' or '-h' option for help."
+	echo "`basename $0`: terminating..."
+	exit 1
+fi
+
+if [ $PLAY_NOW -eq 0 ] ; then exit 0; fi
+
+# play now
 
 log " started." ":"
 
@@ -109,7 +151,7 @@ do
 	sleep 5 
 	
 	log ": audtool: checking playlist repeat status ..."
-	if [[ $(audtool --playlist-repeat-status) -eq "off" ]]
+	if [ `audtool --playlist-repeat-status` == "off" ]
 	then
 		log ": audtool: playlist repeat status is off."
 		audtool --playlist-repeat-toggle  # note: audtool is not reliable
@@ -122,7 +164,7 @@ do
 
 	log ": pactl: setting the sound volume ..." 
 
-	# global sound adjustment command 
+	# global sound adjustment command
 	pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo $SOUND_VOLUME%
 
 	#audtool --set-volume $SOUND_VOLUME # was not reliable
@@ -134,7 +176,7 @@ do
 	log ": waiting for player to be killed ..."
 
 	sleep 5m	# temporary audacious deadlock workaround
-	killall audacious
+	killall	audacious
 
 	#wait $(pidof $(basename $PLAYER))
 
