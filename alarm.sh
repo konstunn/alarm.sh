@@ -20,10 +20,12 @@
 # select display (in case of starting gui apps)
 export DISPLAY=:0
 
+PLAYER_OPTS="-p -h"
 PLAYER="/usr/bin/audacious"
 
 # TODO: make audio track changing more comfortable
 # although using YouCompleteMe is rather comfortable, though it does not always work
+# TODO: get this out to a config file
 #TRACK="/home/konstunn/Music/Frank Sinatra - Fly Me To The Moon.mp3"
 TRACK="/media/konstunn/data/mamedia/recovered_music/Delinquent Habits - Return Of The Tres (Instrumental).mp3"
 TRACK="/home/konstunn/Music/Delinquent Habits - Return Of The Tres (Instrumental).mp3"
@@ -39,6 +41,7 @@ function log {
 	echo "$(date +'%b %d %T') localhost$2 $(basename $0)$1" >> $LOG_FILE 
 }
 
+# TODO: parse command line arguments
 
 # alarm time set mode
 if [ $# == 1 ] ; then
@@ -54,7 +57,7 @@ if [ $# == 1 ] ; then
 	HOURS=$(echo $1 | awk -F':' '{print $1}')
 	MINUTES=$(echo $1 | awk -F':' '{print $2}')
 
-	DT_MIN=5
+	DT_MIN=5 # minutes for rest between wake and cron job
 
 	# unix time for rtcwake
 	WAKE_TIME=$((`date -d "$1" +%s` - $DT_MIN*60))
@@ -62,6 +65,7 @@ if [ $# == 1 ] ; then
 	# robust way
 	SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/"$(basename $0)"
 
+	# TODO add support for more than one alarm jobs
 	# set alarm time in crontab
 	crontab -l | grep -q "alarm.sh$"
 
@@ -74,11 +78,10 @@ if [ $# == 1 ] ; then
 		crontab -l | sed -e "\$a\\\t$MINUTES\t$HOURS\t\*\t\*\t\*\t$SELF_PATH\n" | crontab -
 	fi
 
-	rtcwake -m no -t $WAKE_TIME
-
-	if [ $? ] ; then
-		echo $(basename $0): rtcwake time was not set
-	fi
+	# TODO: check if it is already set,
+	# if yes, compare. if set later, set new,
+	# else leave it
+	sudo rtcwake -m no -t $WAKE_TIME
 
 	exit 0
 
@@ -99,8 +102,7 @@ log " started." ":"
 while true
 do 
 	log ": starting $(basename $PLAYER) ..."
-	$PLAYER -V -p -h "$TRACK" 2>&1 | tee -a $LOG_FILE &
-	#$PLAYER -p -h "$TRACK" 2>&1 | tee -a $LOG_FILE &
+	$PLAYER $PLAYER_OPTS "$TRACK" 2>&1 | tee -a $LOG_FILE &
 	log ": $(basename $PLAYER) started."
 
 	# take a break before call audtool
