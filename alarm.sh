@@ -186,6 +186,6 @@ do
 	notify-send OK "I WILL WAKE YOU UP AFTER $TIMEOUT ..."
 
 	log ": gone to sleep for $TIMEOUT ..."
-	sleep $TIMEOUT
+	sleep 2m
 	log ": $TIMEOUT is over."
 done
