@@ -23,21 +23,14 @@ export DISPLAY=:0
 PLAYER_OPTS="-p -h"
 PLAYER="/usr/bin/audacious"
 
-# TODO: make audio track changing more comfortable
-# although using YouCompleteMe is rather comfortable, though it does not always work
-# TODO: get this out to a config file
-#TRACK="/home/konstunn/Music/Frank Sinatra - Fly Me To The Moon.mp3"
-TRACK="/media/konstunn/data/mamedia/recovered_music/Delinquent Habits - Return Of The Tres (Instrumental).mp3"
-TRACK="/home/konstunn/Music/Delinquent Habits - Return Of The Tres (Instrumental).mp3"
-
 LOG_FILE="./alarm.log"
 CONF_FILE="./alarm.conf"
 
 TIMEOUT="5m"
-SOUND_VOLUME="58"
+SOUND_VOLUME="60" # TODO get out to config file
 
 PLAY_NOW=0
-CONFIG=0
+TEXT_MENU=0
 
 export LC_TIME="en_US.utf8"
 
@@ -53,26 +46,14 @@ function print_help {
 		\n --help | -h \n"
 }
 
-function read_track_conf {
-	echo ""
-}
-
-function write_track_conf {
-	echo ""
-}
-
-function get_time {
-	echo ""
-}
-
-# TODO: add disabling feature
 # sets rtcwake and cron job time
+# $1 - time in hh:mm format
+# TODO: add disabling feature
 function set_time {
 	if ! [[ $1 =~ ^[0-9]{1,2}:[0-9]{2}$ ]] ; then
 	# check $1 for valid time value
-		# TODO: redirect to stderr ?
-		echo $(basename $0): invalid alarm time '$1'
-		echo $(basename $0): terminating...
+		echo $(basename $0): invalid alarm time '$1' >&2
+		echo $(basename $0): terminating... >&2
 		return 1
 	fi
 
@@ -80,16 +61,12 @@ function set_time {
 	HOURS=$(echo $1 | awk -F':' '{print $1}')
 	MINUTES=$(echo $1 | awk -F':' '{print $2}')
 
-	DT_MIN=5 # minutes to idle between wake and cron job
-
-	# unix time for rtcwake
-	WAKE_TIME=$((`date -d "$1" +%s` - $DT_MIN*60))
-
-	# robust way
+	# robust way to get path to itself
 	SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/"$(basename $0)"
 
 	# TODO add support for more than one alarm jobs
 	# set alarm time in crontab
+	# FIXME what if crontab does not exist yet?
 	crontab -l | grep -q "alarm.sh"
 
 	if [ $? == 0 ] ; then
@@ -101,23 +78,18 @@ function set_time {
 		crontab -l | sed -e "\$a\\\t$MINUTES\t$HOURS\t\*\t\*\t\*\t$SELF_PATH -p\n" | crontab -
 	fi
 
-	# TODO: check if it is already set,
-	# if yes, compare. if set later, set new,
-	# else leave it
-	echo "sudo rtcwake -m no -t \$WAKE_TIME"
-	sudo rtcwake -m no -t $WAKE_TIME
-
 	return 0
 }
 
 # if no arguments, claim and exit
-if [ $# -eq 0 ] ; then # TODO: redirect to stderr ?
-	echo "`basename $0`: no options specified"
-	echo "`basename $0`: for list of options specify '--help' or '-h' option."
-	echo "`basename $0`: terminating..."
+if [ $# -eq 0 ] ; then 
+	echo "`basename $0`: no options specified" >&2
+	echo "`basename $0`: for list of options specify '--help' or '-h' option." >&2
+	echo "`basename $0`: terminating..." >&2
 	exit 1 
 fi
 
+# parse command line arguments
 OPTS=+h,p,c
 LONG_OPTS="help,play-now,config"
 
@@ -125,53 +97,67 @@ ARGS=`getopt -o $OPTS --long $LONG_OPTS \
      -n $(basename $0) -- "$@"`
 
 # if getopt returned error, claim and exit
-if [ $? -ne 0 ] ; then # TODO: redirect to stderr ?
-	echo "`basename $0`: specify '--help' or '-h' option for help."
-	echo "`basename $0`: terminating..."
+if [ $? -ne 0 ] ; then
+	echo "`basename $0`: specify '--help' or '-h' option for help." >&2
+	echo "`basename $0`: terminating..." >&2
 	exit 1
 fi
 
 eval set -- "$ARGS"
 
-# parse command line arguments
 while true ; do
-	case "$1" in --play-now | -p)	PLAY_NOW=1 ; shift ;;
+	case "$1" in --play-now | -p)	
+		PLAY_NOW=1 ; shift 
+		;;
 		--config | --configure | -c)
-			CONFIG=1 ; shift ;;
+			TEXT_MENU=1 ; shift 
+		;;
 		--help | -h)	print_help; exit 0 ;;
 		--)				shift ; break ;;
 	esac
 done
 
 # claim if extra arguments and exit
-if [ $# -gt 0 ] ; then # TODO: redirect to stderr ?
-	echo "`basename $0`: extra arguments \"$@\""
-	echo "`basename $0`: specify '--help' or '-h' option for help."
-	echo "`basename $0`: terminating..."
+if [ $# -gt 0 ] ; then
+	echo "`basename $0`: extra arguments \"$@\"" >&2
+	echo "`basename $0`: specify '--help' or '-h' option for help." >&2
+	echo "`basename $0`: terminating..." >&2
 	exit 1
 fi
 
 # invoke text menu
-if [ $CONFIG -ne 0 ] ; then
+if [ $TEXT_MENU -eq 1 ] ; then
 
-	# read track from conf
-	if [ -r $CONF_FILE ] ; then
-		source $CONF_FILE
-	else
-		echo $CONF_FILE : no such a readable config file
-		exit 1
-	fi
+	# read audio track path from conf file
+	#if [ -r $CONF_FILE ] ; then
+	#	source $CONF_FILE
+	#else
+	#	echo $CONF_FILE : no such a readable config file
+	#	exit 1
+	#fi
 
 	# get time from crontab
+	# FIXME what if crontab does not exist yet?
+
+	# check if crontab exists
+	crontab -l > /dev/null
+	if [ $? -gt 0 ] ; then
+		# does not exist
+		crontab -l
+		# TODO create crontab
+		echo "" | crontab -
+	fi
+
 	MINUTES=`crontab -l | sed -ne "/alarm.sh/p" | awk '{print $1}'`
 	HOURS=`crontab -l | sed -ne "/alarm.sh/p" | awk '{print $2}'`
 	TIME=$HOURS:$MINUTES
 
 	while true ; do
-		echo -e "1. set time (\"$TIME\")"
+		echo    "1. set time ($TIME)"
 		echo -e "2. set audio file (\"$TRACK\")"
 		echo	"3. play"
 		echo	"4. exit"
+		echo -e "5. list alarms"
 		echo -en "\nEnter your choice: "
 
 		read DECISION
@@ -181,14 +167,14 @@ if [ $CONFIG -ne 0 ] ; then
 			1)
 				read -p "Enter time in 'hh:mm' format: " VAR
 				set_time $VAR
-				if [ $? -ne 0 ] ; then echo Time was not set 
+				if [ $? -ne 0 ] ; then echo Time was not set
 				else TIME=$VAR ; fi
 			;;
 			2)
 				read -ep "Enter path to audio file: " VAR
-				if [ -r $VAR ] ; then 
+				if [ -r $VAR ] ; then
 					TRACK=$VAR
-					# write to conf
+					# write to conf FIXME substitute
 					echo TRACK="$TRACK" > $CONF_FILE
 				else
 					echo $VAR : no such readable a file
@@ -200,6 +186,7 @@ if [ $CONFIG -ne 0 ] ; then
 			*) read -p "Invalid input. Press Enter.. " ;;
 		esac
 
+		read -p "Press Enter.."
 		clear
 
 	done
