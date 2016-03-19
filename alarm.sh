@@ -24,7 +24,6 @@ PLAYER_OPTS="-p -h"
 PLAYER="/usr/bin/audacious"
 
 LOG_FILE="./alarm.log"
-CONF_FILE="./alarm.conf"
 
 TIMEOUT="5m"
 SOUND_VOLUME="60" # TODO get out to config file
@@ -40,9 +39,9 @@ function log {
 
 function print_help {
 	echo -e "\nUsage:\n `basename $0` [options]"
-	echo -e "\nOptions: \
-		\n --play-now | -p  \
-		\n --config | -c \
+	echo -e "\nOptions:		\
+		\n --menu | -m		\
+		\n --track | -t	<path_to_audio_file> \
 		\n --help | -h \n"
 }
 
@@ -58,8 +57,8 @@ if [ $# -eq 0 ] ; then
 fi
 
 # parse command line arguments
-OPTS=+h,p,c,t:
-LONG_OPTS="help,play-now,config,track:"
+OPTS=+h,t:,m
+LONG_OPTS="help,menu,track:"
 
 ARGS=`getopt -o $OPTS --long $LONG_OPTS \
      -n $(basename $0) -- "$@"`
@@ -75,10 +74,7 @@ eval set -- "$ARGS"
 
 while true ; do
 	case "$1" in 
-		--play-now | -p)	
-			PLAY_NOW=1 ; shift 
-		;;
-		--config | --configure | -c)
+		--menu | -m)
 			TEXT_MENU=1 ; shift 
 		;;
 		--track | -t)
@@ -98,7 +94,10 @@ if [ $# -gt 0 ] ; then
 fi
 
 # $1 - alarm name variable name
-function ask_alarm_spec {
+# $2 - time variable name
+# $3 - day of week variable name
+# $4 - path to audio file string variable name
+function ask_check_alarm_spec {
 	read -p "Enter name for alarm to add: " NAME
 
 	if ! [[ -n $NAME ]] ; then
@@ -160,12 +159,13 @@ function ask_alarm_spec {
 	return 0
 }
 
+JOB_HEADER="alarm.sh"
+
 # $1 - name, 
 # $2 - time (hh:mm), 
 # $3 - crontab day of week
 # $4 - path to track 
 function add_alarm {
-	ALARM_HEADER="^# `basename $0` $1.*$"
 
 	# extract minutes and hours from $1
 	HOURS=$(echo $2 | awk -F':' '{print $1}')
@@ -177,7 +177,7 @@ function add_alarm {
 
 	crontab -l \
 		| sed -e \
-		"\$a\# `basename $0` $1\n\t$MINUTES\t$HOURS\t\*\t\*\t\\$DOW\t$SELF_PATH -t \"$TRACK\"\n" \
+		"\$a\# $JOB_HEADER $1\n\t$MINUTES\t$HOURS\t\*\t\*\t\\$DOW\t$SELF_PATH -t \"$TRACK\"\n" \
 		| crontab -
 
 	if [ $? -eq 0 ] ; then
@@ -192,15 +192,17 @@ function list_alarms {
 	return 0
 }
 
-function toggle_alarm_enabled_disabled {
-	crontab -l | sed "/^# `basename $0` $1.*/{n;s/#//g;t;s/^/#/}" | crontab -
+# $1 - existing alarm name
+function toggle_alarm_on_off {
+	crontab -l | sed "/^# alarm.sh $1.*/{n;s/#//g;t;s/^/#/}" | crontab -
 }
 
-function ask_existing_alarm_name {
+# $1 - existing alarm name variable name
+function ask_check_existing_alarm_name {
 	read -p "Enter alarm name: " NAME
 
 	if ! [[ -n $NAME ]] ; then
-		echo Empty name not allowed.
+		echo Empty name not allowed. Cancelled.
 		return 1
 	fi
 	
@@ -210,6 +212,11 @@ function ask_existing_alarm_name {
 		return 1
 	fi
 	eval $1=$NAME
+}
+
+# $1 - alarm name
+function delete_alarm {
+	crontab -l | sed "/^# $JOB_HEADER $1.*/,+1d" | crontab -
 }
 
 # invoke text menu
@@ -239,35 +246,35 @@ if [ $TEXT_MENU -eq 1 ] ; then
 		echo ""
 
 		case "$CHOICE" in
-			1)
-				# list
-				list_alarms
-			;;
+			1) list_alarms ;;
 			2)
-				ask_alarm_spec NAME TIME DOW TRACK
-				# add
-				if [ $? -gt 0 ] ; then continue; fi
-				add_alarm $NAME $TIME $DOW "$TRACK"
+				ask_check_alarm_spec NAME TIME DOW TRACK
+				if [ $? -eq 0 ] ; then 
+					add_alarm $NAME $TIME $DOW "$TRACK"
+				fi
 			;;
 			3) 
-				# delete
+				ask_check_existing_alarm_name NAME
+				if [ $? -eq 0 ] ; then
+					delete_alarm $NAME
+				fi
 			;;
 			4)
 				# set
+				echo "not implemeted yet"
 			;;
-			5) 
-				# enable / disable
+			5)	
 				list_alarms
 				
-				ask_existing_alarm_name NAME
+				ask_check_existing_alarm_name NAME
 
 				if [ $? -gt 0 ] ; then continue ; fi
 
-				toggle_alarm_enabled_disabled $NAME
+				toggle_alarm_on_off $NAME
 				echo "Succeeded."
 			;;
 			6) exit 0 ;;
-			*) echo -n "Invalid input. " ;;
+			*) echo -en "\n Invalid input. " ;;
 		esac
 
 		echo ""
