@@ -185,13 +185,31 @@ function add_alarm {
 	fi
 }
 
-# FIXME not completed
 function list_alarms {
-
-	# TODO complete this function
-	#
-
+	crontab -l \
+		| grep -A 1 -e "^# alarm.sh" 
+		# TODO make output hamster-readable
 	return 0
+}
+
+function toggle_alarm_enabled_disabled {
+	crontab -l | sed "/^# `basename $0` $1.*/{n;s/#//g;t;s/^/#/}" | crontab -
+}
+
+function ask_existing_alarm_name {
+	read -p "Enter alarm name: " NAME
+
+	if ! [[ -n $NAME ]] ; then
+		echo Empty name not allowed.
+		return 1
+	fi
+	
+	crontab -l | grep "^# `basename $0` $NAME.*" > /dev/null
+	if [ $? -gt 0 ] ; then
+		echo "Alarm '$NAME' does not exist."
+		return 1
+	fi
+	eval $1=$NAME
 }
 
 # invoke text menu
@@ -202,10 +220,13 @@ if [ $TEXT_MENU -eq 1 ] ; then
 	if [ $? -gt 0 ] ; then
 		# create one
 		echo -n "" | crontab -
+	else 
+		# backup crontab
+		crontab -l > ./crontab.bkp/`date +%H%M%S-%d-%m-%Y`.crontab.bkp
 	fi
 
 	while true ; do
-		echo "1. list alarms"
+		echo -e "\n1. list alarms"
 		echo "2. add alarm"
 		echo "3. delete alarm"
 		echo "4. set alarm"
@@ -220,6 +241,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 		case "$CHOICE" in
 			1)
 				# list
+				list_alarms
 			;;
 			2)
 				ask_alarm_spec NAME TIME DOW TRACK
@@ -235,12 +257,21 @@ if [ $TEXT_MENU -eq 1 ] ; then
 			;;
 			5) 
 				# enable / disable
+				list_alarms
+				
+				ask_existing_alarm_name NAME
+
+				if [ $? -gt 0 ] ; then continue ; fi
+
+				toggle_alarm_enabled_disabled $NAME
+				echo "Succeeded."
 			;;
 			6) exit 0 ;;
 			*) echo -n "Invalid input. " ;;
 		esac
 
-		read -p "Press Enter.."
+		echo ""
+		read -p "Press Enter..."
 		clear
 
 	done
