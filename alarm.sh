@@ -46,40 +46,8 @@ function print_help {
 		\n --help | -h \n"
 }
 
-# sets rtcwake and cron job time
-# $1 - time in hh:mm format
-# TODO: add disabling feature
-function set_time {
-	if ! [[ $1 =~ ^[0-9]{1,2}:[0-9]{2}$ ]] ; then
-	# check $1 for valid time value
-		echo $(basename $0): invalid alarm time '$1' >&2
-		echo $(basename $0): terminating... >&2
-		return 1
-	fi
-
-	# extract minutes and hours from $1
-	HOURS=$(echo $1 | awk -F':' '{print $1}')
-	MINUTES=$(echo $1 | awk -F':' '{print $2}')
-
-	# robust way to get path to itself
-	SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/"$(basename $0)"
-
-	# TODO add support for more than one alarm jobs
-	# set alarm time in crontab
-	# FIXME what if crontab does not exist yet?
-	crontab -l | grep -q "alarm.sh"
-
-	if [ $? == 0 ] ; then
-		# if string exists, substitute time
-		crontab -l | sed -e "/alarm.sh/s/[^ \t]\{1,2\}/$MINUTES/1" \
-						 -e	"/alarm.sh/s/[^ \t]\{1,2\}/$HOURS/2"  | crontab -
-	else
-		# if that string does not exist yet, insert it
-		crontab -l | sed -e "\$a\\\t$MINUTES\t$HOURS\t\*\t\*\t\*\t$SELF_PATH -p\n" | crontab -
-	fi
-
-	return 0
-}
+# robust way to get path to itself
+SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/"$(basename $0)"
 
 # if no arguments, claim and exit
 if [ $# -eq 0 ] ; then 
@@ -90,8 +58,8 @@ if [ $# -eq 0 ] ; then
 fi
 
 # parse command line arguments
-OPTS=+h,p,c
-LONG_OPTS="help,play-now,config"
+OPTS=+h,p,c,t:
+LONG_OPTS="help,play-now,config,track:"
 
 ARGS=`getopt -o $OPTS --long $LONG_OPTS \
      -n $(basename $0) -- "$@"`
@@ -106,11 +74,15 @@ fi
 eval set -- "$ARGS"
 
 while true ; do
-	case "$1" in --play-now | -p)	
-		PLAY_NOW=1 ; shift 
+	case "$1" in 
+		--play-now | -p)	
+			PLAY_NOW=1 ; shift 
 		;;
 		--config | --configure | -c)
 			TEXT_MENU=1 ; shift 
+		;;
+		--track | -t)
+			PLAY_NOW=1;	TRACK="$2" ; shift 2
 		;;
 		--help | -h)	print_help; exit 0 ;;
 		--)				shift ; break ;;
@@ -125,65 +97,147 @@ if [ $# -gt 0 ] ; then
 	exit 1
 fi
 
+# $1 - alarm name variable name
+function ask_alarm_spec {
+	read -p "Enter name for alarm to add: " NAME
+
+	if ! [[ -n $NAME ]] ; then
+		echo Empty name not allowed.
+		return 1
+	fi
+	
+	crontab -l | grep "^# `basename $0` $NAME.*" > /dev/null
+	if [ $? -eq 0 ] ; then
+		echo "Alarm '$NAME' already exists."
+		# TODO make output more hamster-readable
+		crontab -l | grep -A 1 "^# `basename $0` $NAME.*"
+		return 1
+	fi
+
+	eval $1=$NAME
+
+	read -p "Enter alarm time in 'hh:mm' format: " TIME
+
+	if ! [[ $TIME =~ ^[0-9]{1,2}:[0-9]{2}$ ]] ; then
+		echo Invalid time input '$TIME'
+		return 1
+	fi
+
+	HOURS=$(echo $TIME | awk -F':' '{print $1}')
+	MINUTES=$(echo $TIME | awk -F':' '{print $2}')
+
+	if [ $HOURS -gt 23 ] ; then
+		echo Invalid time input $TIME
+		return 1
+	fi
+
+	if [ $MINUTES -gt 59 ] ; then
+		echo Invalid time input $TIME
+		return 1
+	fi
+
+	eval $2=$TIME
+
+	read -p "Enter day of week list, range or list of ranges: " DOW
+
+	# validate DOW
+	if ! [[ $DOW =~ ^([1-7])|([1-7]-[1-7])(,\1)+$ ]] ; then
+		echo "Invalid input '$DOW'"
+		return 1
+	fi
+
+	eval $3=$DOW
+
+	read -ep "Enter path to audio track: " TRACK
+
+	if ! [ -e "$TRACK" ] ; then
+		echo "No such a readable file '$TRACK'"
+		return 1
+	fi
+
+	eval $4=\"$TRACK\"
+
+	return 0
+}
+
+# $1 - name, 
+# $2 - time (hh:mm), 
+# $3 - crontab day of week
+# $4 - path to track 
+function add_alarm {
+	ALARM_HEADER="^# `basename $0` $1.*$"
+
+	# extract minutes and hours from $1
+	HOURS=$(echo $2 | awk -F':' '{print $1}')
+	MINUTES=$(echo $2 | awk -F':' '{print $2}')
+
+	DOW=$3 # crontab day of week 
+
+	TRACK="$4"
+
+	crontab -l \
+		| sed -e \
+		"\$a\# `basename $0` $1\n\t$MINUTES\t$HOURS\t\*\t\*\t\\$DOW\t$SELF_PATH -t \"$TRACK\"\n" \
+		| crontab -
+
+	if [ $? -eq 0 ] ; then
+		echo "Alarm added"
+	fi
+}
+
+# FIXME not completed
+function list_alarms {
+
+	# TODO complete this function
+	#
+
+	return 0
+}
+
 # invoke text menu
 if [ $TEXT_MENU -eq 1 ] ; then
 
-	# read audio track path from conf file
-	#if [ -r $CONF_FILE ] ; then
-	#	source $CONF_FILE
-	#else
-	#	echo $CONF_FILE : no such a readable config file
-	#	exit 1
-	#fi
-
-	# get time from crontab
-	# FIXME what if crontab does not exist yet?
-
-	# check if crontab exists
-	crontab -l > /dev/null
+	# if crontab does not exist
+	crontab -l > /dev/null		
 	if [ $? -gt 0 ] ; then
-		# does not exist
-		crontab -l
-		# TODO create crontab
-		echo "" | crontab -
+		# create one
+		echo -n "" | crontab -
 	fi
 
-	MINUTES=`crontab -l | sed -ne "/alarm.sh/p" | awk '{print $1}'`
-	HOURS=`crontab -l | sed -ne "/alarm.sh/p" | awk '{print $2}'`
-	TIME=$HOURS:$MINUTES
-
 	while true ; do
-		echo    "1. set time ($TIME)"
-		echo -e "2. set audio file (\"$TRACK\")"
-		echo	"3. play"
-		echo	"4. exit"
-		echo -e "5. list alarms"
-		echo -en "\nEnter your choice: "
+		echo "1. list alarms"
+		echo "2. add alarm"
+		echo "3. delete alarm"
+		echo "4. set alarm"
+		echo "5. enable/disable alarm"
+		echo "6. exit"
 
-		read DECISION
+		echo ""
+		read -p "Enter your choice: " CHOICE
+
 		echo ""
 
-		case "$DECISION" in
+		case "$CHOICE" in
 			1)
-				read -p "Enter time in 'hh:mm' format: " VAR
-				set_time $VAR
-				if [ $? -ne 0 ] ; then echo Time was not set
-				else TIME=$VAR ; fi
+				# list
 			;;
 			2)
-				read -ep "Enter path to audio file: " VAR
-				if [ -r $VAR ] ; then
-					TRACK=$VAR
-					# write to conf FIXME substitute
-					echo TRACK="$TRACK" > $CONF_FILE
-				else
-					echo $VAR : no such readable a file
-				fi
-				read -p "Press Enter.. "
+				ask_alarm_spec NAME TIME DOW TRACK
+				# add
+				if [ $? -gt 0 ] ; then continue; fi
+				add_alarm $NAME $TIME $DOW "$TRACK"
 			;;
-			3) PLAY_NOW=1 ; break ;;
-			4) exit 0 ;;
-			*) read -p "Invalid input. Press Enter.. " ;;
+			3) 
+				# delete
+			;;
+			4)
+				# set
+			;;
+			5) 
+				# enable / disable
+			;;
+			6) exit 0 ;;
+			*) echo -n "Invalid input. " ;;
 		esac
 
 		read -p "Press Enter.."
