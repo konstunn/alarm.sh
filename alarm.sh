@@ -48,12 +48,13 @@ function print_help {
 # robust way to get path to itself
 SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/"$(basename $0)"
 
-# if no arguments, claim and exit
+# if no arguments, invoke text menu
 if [ $# -eq 0 ] ; then 
-	echo "`basename $0`: no options specified" >&2
-	echo "`basename $0`: for list of options specify '--help' or '-h' option." >&2
-	echo "`basename $0`: terminating..." >&2
-	exit 1 
+	TEXT_MENU=1
+	#echo "`basename $0`: no options specified" >&2
+	#echo "`basename $0`: for list of options specify '--help' or '-h' option." >&2
+	#echo "`basename $0`: terminating..." >&2
+	#exit 1 
 fi
 
 # parse command line arguments
@@ -93,6 +94,56 @@ if [ $# -gt 0 ] ; then
 	exit 1
 fi
 
+# $1 - hours variable name, $2 - minutes variable name
+function ask_check_alarm_time {
+	read -p "Enter alarm time in 'hh:mm' format: " TIME
+
+	if ! [[ $TIME =~ ^[0-9]{1,2}:[0-9]{2}$ ]] ; then
+		echo Invalid time input '$TIME'
+		return 1
+	fi
+
+	HOURS=$(echo $TIME | awk -F':' '{print $1}')
+	MINUTES=$(echo $TIME | awk -F':' '{print $2}')
+
+	if [ $HOURS -gt 23 ] ; then
+		echo Invalid time input $TIME
+		return 1
+	fi
+
+	if [ $MINUTES -gt 59 ] ; then
+		echo Invalid time input $TIME
+		return 1
+	fi
+
+	eval $1=$HOURS
+	eval $2=$MINUTES
+}
+
+# $1 - alarm dow variable name
+function ask_check_alarm_dow {
+	read -p "Enter day of week list, range or list of ranges: " DOW
+
+	# validate DOW
+	if ! [[ $DOW =~ ^([1-7])|([1-7]-[1-7])(,\1)+$ ]] ; then
+		echo "Invalid input '$DOW'"
+		return 1
+	fi
+
+	eval $1=$DOW
+}
+
+function ask_check_audio_track_path {
+	read -ep "Enter path to audio track: " TRACK
+
+	if ! [ -e "$TRACK" ] ; then
+		echo "No such a readable file '$TRACK'"
+		return 1
+	fi
+
+	eval $1=\"$TRACK\"
+}
+
 # $1 - alarm name variable name
 # $2 - time variable name
 # $3 - day of week variable name
@@ -105,11 +156,11 @@ function ask_check_alarm_spec {
 		return 1
 	fi
 	
-	crontab -l | grep "^# `basename $0` $NAME.*" > /dev/null
+	crontab -l | grep "^# `basename $0` $NAME\n" > /dev/null
 	if [ $? -eq 0 ] ; then
 		echo "Alarm '$NAME' already exists."
 		# TODO make output more hamster-readable
-		crontab -l | grep -A 1 "^# `basename $0` $NAME.*"
+		crontab -l | grep -A 1 "^# `basename $0` $NAME\n"
 		return 1
 	fi
 
@@ -166,7 +217,6 @@ JOB_HEADER="alarm.sh"
 # $3 - crontab day of week
 # $4 - path to track 
 function add_alarm {
-
 	# extract minutes and hours from $1
 	HOURS=$(echo $2 | awk -F':' '{print $1}')
 	MINUTES=$(echo $2 | awk -F':' '{print $2}')
@@ -177,7 +227,7 @@ function add_alarm {
 
 	crontab -l \
 		| sed -e \
-		"\$a\# $JOB_HEADER $1\n\t$MINUTES\t$HOURS\t\*\t\*\t\\$DOW\t$SELF_PATH -t \"$TRACK\"\n" \
+		"\$a\# $JOB_HEADER $1\n\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"\n" \
 		| crontab -
 
 	if [ $? -eq 0 ] ; then
@@ -194,7 +244,7 @@ function list_alarms {
 
 # $1 - existing alarm name
 function toggle_alarm_on_off {
-	crontab -l | sed "/^# alarm.sh $1.*/{n;s/#//g;t;s/^/#/}" | crontab -
+	crontab -l | sed "/^# $JOB_HEADER $1.*/{n;s/#//g;t;s/^/#/}" | crontab -
 }
 
 # $1 - existing alarm name variable name
@@ -206,7 +256,7 @@ function ask_check_existing_alarm_name {
 		return 1
 	fi
 	
-	crontab -l | grep "^# `basename $0` $NAME.*" > /dev/null
+	crontab -l | grep "^# `basename $0` $NAME$" > /dev/null
 	if [ $? -gt 0 ] ; then
 		echo "Alarm '$NAME' does not exist."
 		return 1
@@ -216,7 +266,30 @@ function ask_check_existing_alarm_name {
 
 # $1 - alarm name
 function delete_alarm {
-	crontab -l | sed "/^# $JOB_HEADER $1.*/,+1d" | crontab -
+	crontab -l | sed "/^# $JOB_HEADER $1$/,+2d" | crontab -
+}
+
+# $1 - name
+function set_alarm {
+	ask_check_alarm_time HOURS MINUTES
+	if [ $? -gt 0 ] ; then
+		return 1
+	fi
+
+	ask_check_alarm_dow DOW
+	if [ $? -gt 0 ] ; then 
+		return 1
+	fi
+
+	ask_check_audio_track_path TRACK
+	if [ $? -gt 0 ] ; then 
+		return 1
+	fi
+
+	crontab -l \
+		| sed -e \
+			"/^# $JOB_HEADER $1$/{n;s%^.*$%\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"%}" \
+		| crontab -
 }
 
 # invoke text menu
@@ -254,24 +327,27 @@ if [ $TEXT_MENU -eq 1 ] ; then
 				fi
 			;;
 			3) 
+				list_alarms
 				ask_check_existing_alarm_name NAME
 				if [ $? -eq 0 ] ; then
 					delete_alarm $NAME
+					echo Deletion succeeded
 				fi
 			;;
 			4)
-				# set
-				echo "not implemeted yet"
+				list_alarms
+				ask_check_existing_alarm_name NAME
+				if [ $? -eq 0 ] ; then 
+					set_alarm $NAME
+				fi
 			;;
 			5)	
 				list_alarms
-				
 				ask_check_existing_alarm_name NAME
-
-				if [ $? -gt 0 ] ; then continue ; fi
-
-				toggle_alarm_on_off $NAME
-				echo "Succeeded."
+				if [ $? -eq 0 ] ; then 
+					toggle_alarm_on_off $NAME
+					echo "Succeeded."
+				fi
 			;;
 			6) exit 0 ;;
 			*) echo -en "\n Invalid input. " ;;
