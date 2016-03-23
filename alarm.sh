@@ -51,10 +51,6 @@ SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/"$(basename $0)"
 # if no arguments, invoke text menu
 if [ $# -eq 0 ] ; then 
 	TEXT_MENU=1
-	#echo "`basename $0`: no options specified" >&2
-	#echo "`basename $0`: for list of options specify '--help' or '-h' option." >&2
-	#echo "`basename $0`: terminating..." >&2
-	#exit 1 
 fi
 
 # parse command line arguments
@@ -144,6 +140,7 @@ function ask_check_audio_track_path {
 	eval $1=\"$TRACK\"
 }
 
+# TODO call ask_check_* functions in this one
 # $1 - alarm name variable name
 # $2 - time variable name
 # $3 - day of week variable name
@@ -156,11 +153,11 @@ function ask_check_alarm_spec {
 		return 1
 	fi
 	
-	crontab -l | grep "^# `basename $0` $NAME\n" > /dev/null
+	crontab -l | grep "^# `basename $0` $NAME$" > /dev/null
 	if [ $? -eq 0 ] ; then
 		echo "Alarm '$NAME' already exists."
 		# TODO make output more hamster-readable
-		crontab -l | grep -A 1 "^# `basename $0` $NAME\n"
+		crontab -l | grep -A 1 "^# `basename $0` $NAME$"
 		return 1
 	fi
 
