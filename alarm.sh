@@ -236,6 +236,9 @@ function list_alarms {
 	crontab -l \
 		| grep -A 1 -e "^# alarm.sh" 
 		# TODO make output hamster-readable
+	if [ $? -eq 1 ] ; then
+		echo "No alarms."
+	fi
 	return 0
 }
 
