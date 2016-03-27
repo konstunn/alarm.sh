@@ -3,6 +3,7 @@
 # TODO:
 #	- add debug feature to "simulate" execution (dry-run)
 #	- replace audacious with more reliable audio player
+#	- integrate rtcwake
 
 # NOTES:
 # - audtool is not reliable (report audacious bug)
@@ -155,9 +156,12 @@ function ask_check_alarm_spec {
 	
 	crontab -l | grep "^# `basename $0` $NAME$" > /dev/null
 	if [ $? -eq 0 ] ; then
-		echo "Alarm '$NAME' already exists."
-		# TODO make output more hamster-readable
-		crontab -l | grep -A 1 "^# `basename $0` $NAME$"
+		echo -e "\nAlarm '$NAME' already exists.\n"
+		crontab -l | grep -A 1 -e "^# alarm.sh $NAME$" \
+			| awk -F' |\t' \
+				'/^# alarm.sh/ { printf "%s\t",$3 }
+				/^#?\t[0-9]/ { printf "%s:%s\t%s\t",$3,$2,$6;
+					match($0,/\".+\"/,a); print a[0] }'
 		return 1
 	fi
 
@@ -228,18 +232,22 @@ function add_alarm {
 		| crontab -
 
 	if [ $? -eq 0 ] ; then
-		echo "Alarm added"
+		echo -e "\nAlarm added"
 	fi
 }
 
 function list_alarms {
-	crontab -l \
-		| grep -A 1 -e "^# alarm.sh" 
-		# TODO make output hamster-readable
-	if [ $? -eq 1 ] ; then
-		echo "No alarms."
-	fi
-	return 0
+	crontab -l | grep -A 1 "^# alarm.sh" \
+		| awk -F' |\t' \
+			'BEGIN { print "name\tstate\ttime\tweekday\ttrack"; i=0 }
+			/^# alarm.sh/ { printf "%s\t",$3; i++ }
+			/^#?\t[0-9]/ { 
+				if ($1 == "#") printf "%s\t","off"
+				else printf "%s\t","on"
+				printf "%s:%s\t%s\t",$3,$2,$6;
+				match($0,/".+"/,a); print a[0] 
+			}
+			END { if (i == 0) print "\nNo alarms." }'
 }
 
 # $1 - existing alarm name
@@ -249,6 +257,7 @@ function toggle_alarm_on_off {
 
 # $1 - existing alarm name variable name
 function ask_check_existing_alarm_name {
+	echo ""
 	read -p "Enter alarm name: " NAME
 
 	if ! [[ -n $NAME ]] ; then
@@ -331,7 +340,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 				ask_check_existing_alarm_name NAME
 				if [ $? -eq 0 ] ; then
 					delete_alarm $NAME
-					echo Deletion succeeded
+					echo -e "\nDeletion succeeded"
 				fi
 			;;
 			4)
@@ -339,6 +348,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 				ask_check_existing_alarm_name NAME
 				if [ $? -eq 0 ] ; then 
 					set_alarm $NAME
+					echo "Success"
 				fi
 			;;
 			5)	
@@ -346,11 +356,11 @@ if [ $TEXT_MENU -eq 1 ] ; then
 				ask_check_existing_alarm_name NAME
 				if [ $? -eq 0 ] ; then 
 					toggle_alarm_on_off $NAME
-					echo "Succeeded."
+					echo -e "\nSucceeded."
 				fi
 			;;
 			6) exit 0 ;;
-			*) echo -en "\n Invalid input. " ;;
+			*) echo "Invalid input." ;;
 		esac
 
 		echo ""
