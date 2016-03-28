@@ -27,7 +27,7 @@ PLAYER="/usr/bin/audacious"
 LOG_FILE="./alarm.log"
 
 TIMEOUT="5m"
-SOUND_VOLUME="60" # TODO get out to config file
+SOUND_VOLUME="35" # TODO get out
 
 PLAY_NOW=0
 TEXT_MENU=0
@@ -103,12 +103,7 @@ function ask_check_alarm_time {
 	HOURS=$(echo $TIME | awk -F':' '{print $1}')
 	MINUTES=$(echo $TIME | awk -F':' '{print $2}')
 
-	if [ $HOURS -gt 23 ] ; then
-		echo Invalid time input $TIME
-		return 1
-	fi
-
-	if [ $MINUTES -gt 59 ] ; then
+	if [ $HOURS -gt 23 -o $MINUTES -gt 59 ] ; then
 		echo Invalid time input $TIME
 		return 1
 	fi
@@ -130,6 +125,7 @@ function ask_check_alarm_dow {
 	eval $1=$DOW
 }
 
+# $1 - track path variable name
 function ask_check_audio_track_path {
 	read -ep "Enter path to audio track: " TRACK
 
@@ -141,7 +137,6 @@ function ask_check_audio_track_path {
 	eval $1=\"$TRACK\"
 }
 
-# TODO call ask_check_* functions in this one
 # $1 - alarm name variable name
 # $2 - time variable name
 # $3 - day of week variable name
@@ -154,7 +149,7 @@ function ask_check_alarm_spec {
 		return 1
 	fi
 	
-	crontab -l | grep "^# `basename $0` $NAME$" > /dev/null
+	crontab -l | grep "^# alarm.sh $NAME$" > /dev/null
 	if [ $? -eq 0 ] ; then
 		echo -e "\nAlarm '$NAME' already exists.\n"
 		crontab -l | grep -A 1 -e "^# alarm.sh $NAME$" \
@@ -167,45 +162,16 @@ function ask_check_alarm_spec {
 
 	eval $1=$NAME
 
-	read -p "Enter alarm time in 'hh:mm' format: " TIME
+	ask_check_alarm_time HOURS MINUTES
 
-	if ! [[ $TIME =~ ^[0-9]{1,2}:[0-9]{2}$ ]] ; then
-		echo Invalid time input '$TIME'
-		return 1
-	fi
+	eval $2=$HOURS:$MINUTES
 
-	HOURS=$(echo $TIME | awk -F':' '{print $1}')
-	MINUTES=$(echo $TIME | awk -F':' '{print $2}')
-
-	if [ $HOURS -gt 23 ] ; then
-		echo Invalid time input $TIME
-		return 1
-	fi
-
-	if [ $MINUTES -gt 59 ] ; then
-		echo Invalid time input $TIME
-		return 1
-	fi
-
-	eval $2=$TIME
-
-	read -p "Enter day of week list, range or list of ranges: " DOW
-
-	# validate DOW
-	if ! [[ $DOW =~ ^([1-7])|([1-7]-[1-7])(,\1)+$ ]] ; then
-		echo "Invalid input '$DOW'"
-		return 1
-	fi
+	ask_check_alarm_dow DOW
 
 	eval $3=$DOW
 
-	read -ep "Enter path to audio track: " TRACK
-
-	if ! [ -e "$TRACK" ] ; then
-		echo "No such a readable file '$TRACK'"
-		return 1
-	fi
-
+	ask_check_audio_track_path TRACK
+	
 	eval $4=\"$TRACK\"
 
 	return 0
@@ -218,7 +184,6 @@ JOB_HEADER="alarm.sh"
 # $3 - crontab day of week
 # $4 - path to track 
 function add_alarm {
-	# extract minutes and hours from $1
 	HOURS=$(echo $2 | awk -F':' '{print $1}')
 	MINUTES=$(echo $2 | awk -F':' '{print $2}')
 
@@ -281,23 +246,17 @@ function delete_alarm {
 # $1 - name
 function set_alarm {
 	ask_check_alarm_time HOURS MINUTES
-	if [ $? -gt 0 ] ; then
-		return 1
-	fi
+	if [ $? -gt 0 ] ; then return 1 ; fi
 
 	ask_check_alarm_dow DOW
-	if [ $? -gt 0 ] ; then 
-		return 1
-	fi
+	if [ $? -gt 0 ] ; then return 1 ; fi
 
 	ask_check_audio_track_path TRACK
-	if [ $? -gt 0 ] ; then 
-		return 1
-	fi
+	if [ $? -gt 0 ] ; then return 1 ; fi
 
 	crontab -l \
 		| sed -e \
-			"/^# $JOB_HEADER $1$/{n;s%^.*$%\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"%}" \
+			"/^# $JOB_HEADER $1$/{n;s%^\(\#\?\).*$%\1\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"%}" \
 		| crontab -
 }
 
@@ -348,7 +307,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 				ask_check_existing_alarm_name NAME
 				if [ $? -eq 0 ] ; then 
 					set_alarm $NAME
-					echo "Success"
+					if [ $? -eq 0 ] ; then echo "Success" ; fi
 				fi
 			;;
 			5)	
