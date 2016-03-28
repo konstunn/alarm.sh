@@ -192,7 +192,7 @@ function add_alarm {
 	TRACK="$4"
 
 	crontab -l \
-		| sed -e \
+		| sed -e \ # FIXME does not always work
 		"\$a\# $JOB_HEADER $1\n\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"\n" \
 		| crontab -
 
@@ -267,10 +267,12 @@ if [ $TEXT_MENU -eq 1 ] ; then
 	crontab -l > /dev/null		
 	if [ $? -gt 0 ] ; then
 		# create one
-		echo -n "" | crontab -
+		echo -e "\n" | crontab -
 	else 
 		# backup crontab
-		crontab -l > ./crontab.bkp/`date +%H%M%S-%d-%m-%Y`.crontab.bkp
+		echo -n ""
+		# FIXME first mkdir
+		#crontab -l > ./crontab.bkp/`date +%H%M%S-%d-%m-%Y`.crontab.bkp
 	fi
 
 	while true ; do
