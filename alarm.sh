@@ -32,7 +32,7 @@ SOUND_VOLUME="35" # TODO get out
 PLAY_NOW=0
 TEXT_MENU=0
 
-export LC_TIME="en_US.utf8"
+export LC_TIME="en_US.utf8" # for logging
 
 function log {
 	echo "$(date +'%b %d %T') localhost: $(basename $0)$1" >> $LOG_FILE
@@ -192,12 +192,13 @@ function add_alarm {
 	TRACK="$4"
 
 	crontab -l \
-		| sed -e \ # FIXME does not always work
-		"\$a\# $JOB_HEADER $1\n\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"\n" \
+		| sed -e \ # FIXME test - does not always work
+		"\$a\# $JOB_HEADER $1\n
+		\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"\n" \
 		| crontab -
 
 	if [ $? -eq 0 ] ; then
-		echo -e "\nAlarm added"
+		echo -e "\nAlarm was added"
 	fi
 }
 
@@ -260,6 +261,16 @@ function set_alarm {
 		| crontab -
 }
 
+function print_main_menu {
+	echo "1. list alarms"
+	echo "2. add alarm"
+	echo "3. delete alarm"
+	echo "4. set alarm"
+	echo "5. enable/disable alarm"
+	echo "6. exit"
+
+}
+
 # invoke text menu
 if [ $TEXT_MENU -eq 1 ] ; then
 
@@ -276,13 +287,8 @@ if [ $TEXT_MENU -eq 1 ] ; then
 	fi
 
 	while true ; do
-		echo -e "\n1. list alarms"
-		echo "2. add alarm"
-		echo "3. delete alarm"
-		echo "4. set alarm"
-		echo "5. enable/disable alarm"
-		echo "6. exit"
-
+		echo ""
+		print_main_menu
 		echo ""
 		read -p "Enter your choice: " CHOICE
 
