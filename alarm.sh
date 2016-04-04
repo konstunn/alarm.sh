@@ -4,6 +4,7 @@
 #	- add debug feature to "simulate" execution (dry-run)
 #	- replace audacious with more reliable audio player
 #	- integrate rtcwake
+#	- install to home dir
 
 # NOTES:
 # - audtool is not reliable (report audacious bug)
@@ -27,7 +28,7 @@ PLAYER="/usr/bin/audacious"
 LOG_FILE="./alarm.log"
 
 TIMEOUT="5m"
-SOUND_VOLUME="35" # TODO get out
+SOUND_VOLUME="50" # TODO get out
 
 PLAY_NOW=0
 TEXT_MENU=0
@@ -268,7 +269,17 @@ function print_main_menu {
 	echo "4. set alarm"
 	echo "5. enable/disable alarm"
 	echo "6. exit"
+}
 
+# $1 - start, $2 - finish 
+function pa_increment_volume_smoothly {
+	SOUND_VOLUME=$1
+	while [ $SOUND_VOLUME -lt $2 ] ; do
+		# global sound adjustment command
+		pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo $SOUND_VOLUME%
+		sleep 1
+		SOUND_VOLUME=$(($SOUND_VOLUME + 2))
+	done
 }
 
 # invoke text menu
@@ -366,8 +377,7 @@ do
 
 	log ": pactl: setting the sound volume ..." 
 
-	# global sound adjustment command
-	pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo $SOUND_VOLUME%
+	pa_increment_volume_smoothly 30 $SOUND_VOLUME
 
 	#audtool --set-volume $SOUND_VOLUME # was not reliable
 	log ": pactl: sound volume is set."
