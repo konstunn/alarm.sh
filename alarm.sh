@@ -360,6 +360,10 @@ do
 	$PLAYER $PLAYER_OPTS "$TRACK" 2>&1 | tee -a $LOG_FILE &
 	log ": $(basename $PLAYER) started."
 
+	START_VOLUME=30
+
+	pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo $START_VOLUME%
+
 	# take a break before call audtool
 	sleep 5 
 	
@@ -377,7 +381,7 @@ do
 
 	log ": pactl: setting the sound volume ..." 
 
-	pa_increment_volume_smoothly 30 $SOUND_VOLUME
+	pa_increment_volume_smoothly $START_VOLUME $SOUND_VOLUME
 
 	#audtool --set-volume $SOUND_VOLUME # was not reliable
 	log ": pactl: sound volume is set."
