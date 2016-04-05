@@ -97,7 +97,7 @@ function ask_check_alarm_time {
 	read -p "Enter alarm time in 'hh:mm' format: " TIME
 
 	if ! [[ $TIME =~ ^[0-9]{1,2}:[0-9]{2}$ ]] ; then
-		echo Invalid time input '$TIME'
+		echo Invalid time input \'$TIME\'
 		return 1
 	fi
 
@@ -105,7 +105,7 @@ function ask_check_alarm_time {
 	MINUTES=$(echo $TIME | awk -F':' '{print $2}')
 
 	if [ $HOURS -gt 23 -o $MINUTES -gt 59 ] ; then
-		echo Invalid time input $TIME
+		echo Invalid time input \'$TIME\'
 		return 1
 	fi
 
@@ -164,14 +164,17 @@ function ask_check_alarm_spec {
 	eval $1=$NAME
 
 	ask_check_alarm_time HOURS MINUTES
+	if [ $? -gt 0 ] ; then return 1 ; fi
 
 	eval $2=$HOURS:$MINUTES
 
 	ask_check_alarm_dow DOW
+	if [ $? -gt 0 ] ; then return 1 ; fi
 
 	eval $3=$DOW
 
 	ask_check_audio_track_path TRACK
+	if [ $? -gt 0 ] ; then return 1 ; fi
 	
 	eval $4=\"$TRACK\"
 
@@ -192,10 +195,8 @@ function add_alarm {
 
 	TRACK="$4"
 
-	crontab -l \
-		| sed -e \ # FIXME test - does not always work
-		"\$a\# $JOB_HEADER $1\n
-		\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"\n" \
+	(crontab -l 
+	echo -e "# $JOB_HEADER $1\n\t$MINUTES\t$HOURS\t*\t*\t$DOW\t$SELF_PATH -t \"$TRACK\"\n") \
 		| crontab -
 
 	if [ $? -eq 0 ] ; then
@@ -286,15 +287,14 @@ function pa_increment_volume_smoothly {
 if [ $TEXT_MENU -eq 1 ] ; then
 
 	# if crontab does not exist
-	crontab -l > /dev/null		
+	crontab -l &> /dev/null
 	if [ $? -gt 0 ] ; then
 		# create one
-		echo -e "\n" | crontab -
+		echo "" | crontab -
 	else 
 		# backup crontab
-		echo -n ""
-		# FIXME first mkdir
-		#crontab -l > ./crontab.bkp/`date +%H%M%S-%d-%m-%Y`.crontab.bkp
+		mkdir -p ./crontab.bkp
+		crontab -l > ./crontab.bkp/`date +%H%M%S-%d-%m-%Y`.crontab.bkp
 	fi
 
 	while true ; do
