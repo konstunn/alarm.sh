@@ -246,21 +246,70 @@ function delete_alarm {
 	crontab -l | sed "/^# $JOB_HEADER $1$/,+2d" | crontab -
 }
 
-# $1 - name
-function set_alarm {
-	ask_check_alarm_time HOURS MINUTES
-	if [ $? -gt 0 ] ; then return 1 ; fi
+function print_set_alarm_menu {
+	echo "1. set time"
+	echo "2. set day of week"
+	echo "3. set audio track path"
+	echo "4. set all one by one"
+	echo "5. exit"
+}
 
-	ask_check_alarm_dow DOW
-	if [ $? -gt 0 ] ; then return 1 ; fi
-
-	ask_check_audio_track_path TRACK
-	if [ $? -gt 0 ] ; then return 1 ; fi
-
+# $1 - alarm name, $2 - hours, $2 - minutes
+function set_alarm_time {
 	crontab -l \
 		| sed -e \
-			"/^# $JOB_HEADER $1$/{n;s%^\(\#\?\).*$%\1\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"%}" \
+			"/^# $JOB_HEADER $1$/{n;s%^\(\#\?\)\t[^ \t]\+\t[^ \t]\+%\1\t$3\t$2%}" \
 		| crontab -
+	return $?
+}
+
+# $1 - name
+function set_alarm {
+	while true ; do
+		clear
+		echo ""
+		echo "Setting alarm \"$1\""
+		echo ""
+		print_set_alarm_menu
+		echo ""
+
+		read -p "Enter your choice: " CHOICE
+
+		echo ""
+		case $CHOICE in
+			1) 
+				ask_check_alarm_time HOURS MINUTES
+				if [ $? -gt 0 ] ; then continue; fi
+				set_alarm_time $1 $HOURS $MINUTES	
+				if [ $? -gt 0 ] ; then echo "Fail"; continue 
+				else echo "Success" ; fi
+				;;
+			2) echo "Not implemented yet"
+				;;
+			3) echo "Not implemented yet"
+				;;
+			4) 
+				ask_check_alarm_time HOURS MINUTES
+				if [ $? -gt 0 ] ; then continue ; fi
+
+				ask_check_alarm_dow DOW
+				if [ $? -gt 0 ] ; then continue ; fi
+
+				ask_check_audio_track_path TRACK
+				if [ $? -gt 0 ] ; then continue ; fi
+
+				crontab -l \
+					| sed -e \
+						"/^# $JOB_HEADER $1$/{n;s%^\(\#\?\).*$%\1\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"%}" \
+					| crontab -
+				if [ $? -gt 0 ] ; then echo "Fail"
+				else echo "Success" ; fi
+			;;
+			5) return 0 ;;
+		esac
+		echo ""
+		read -p "Press Enter..."
+	done
 }
 
 function print_main_menu {
@@ -326,7 +375,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 				ask_check_existing_alarm_name NAME
 				if [ $? -eq 0 ] ; then 
 					set_alarm $NAME
-					if [ $? -eq 0 ] ; then echo "Success" ; fi
+					#if [ $? -eq 0 ] ; then echo "Success" ; fi
 				fi
 			;;
 			5)	
