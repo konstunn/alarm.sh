@@ -25,10 +25,10 @@ export DISPLAY=:0
 PLAYER_OPTS="-p -h"
 PLAYER="/usr/bin/audacious"
 
-LOG_FILE="./alarm.log"
+LOG_FILE="./alarm.log" # TODO specify constant absolute path
 
 TIMEOUT="5m"
-SOUND_VOLUME="50" # TODO get out
+SOUND_VOLUME="60" # TODO get out
 
 PLAY_NOW=0
 TEXT_MENU=0
@@ -138,6 +138,16 @@ function ask_check_audio_track_path {
 	eval $1=\"$TRACK\"
 }
 
+# prints alarm
+# $1 - name of existing alarm
+function select_alarm {
+	crontab -l | grep -A 1 -e "^# alarm.sh $1$" \
+			| awk -F' |\t' \
+				'/^# alarm.sh/ { printf "%s\t",$3 }
+				/^#?\t[0-9]/ { printf "%s:%s\t%s\t",$3,$2,$6;
+					match($0,/\".+\"/,a); print a[0] }'
+}
+
 # $1 - alarm name variable name
 # $2 - time variable name
 # $3 - day of week variable name
@@ -153,11 +163,7 @@ function ask_check_alarm_spec {
 	crontab -l | grep "^# alarm.sh $NAME$" > /dev/null
 	if [ $? -eq 0 ] ; then
 		echo -e "\nAlarm '$NAME' already exists.\n"
-		crontab -l | grep -A 1 -e "^# alarm.sh $NAME$" \
-			| awk -F' |\t' \
-				'/^# alarm.sh/ { printf "%s\t",$3 }
-				/^#?\t[0-9]/ { printf "%s:%s\t%s\t",$3,$2,$6;
-					match($0,/\".+\"/,a); print a[0] }'
+		select_alarm $NAME
 		return 1
 	fi
 
@@ -204,6 +210,7 @@ function add_alarm {
 	fi
 }
 
+# list all alarms
 function list_alarms {
 	crontab -l | grep -A 1 "^# alarm.sh" \
 		| awk -F' |\t' \
@@ -246,14 +253,6 @@ function delete_alarm {
 	crontab -l | sed "/^# $JOB_HEADER $1$/,+2d" | crontab -
 }
 
-function print_set_alarm_menu {
-	echo "1. set time"
-	echo "2. set day of week"
-	echo "3. set audio track path"
-	echo "4. set all one by one"
-	echo "5. exit"
-}
-
 # $1 - alarm name, $2 - hours, $2 - minutes
 function set_alarm_time {
 	crontab -l \
@@ -263,12 +262,21 @@ function set_alarm_time {
 	return $?
 }
 
+function print_set_alarm_menu {
+	echo "1. set time"
+	echo "2. set day of week"
+	echo "3. set audio track path"
+	echo "4. set all one by one"
+	echo "5. exit"
+}
+
 # $1 - name
 function set_alarm {
 	while true ; do
 		clear
 		echo ""
 		echo "Setting alarm \"$1\""
+		select_alarm $1
 		echo ""
 		print_set_alarm_menu
 		echo ""
@@ -312,15 +320,6 @@ function set_alarm {
 	done
 }
 
-function print_main_menu {
-	echo "1. list alarms"
-	echo "2. add alarm"
-	echo "3. delete alarm"
-	echo "4. set alarm"
-	echo "5. enable/disable alarm"
-	echo "6. exit"
-}
-
 # $1 - start, $2 - finish 
 function pa_increment_volume_smoothly {
 	SOUND_VOLUME=$1
@@ -330,6 +329,15 @@ function pa_increment_volume_smoothly {
 		sleep 1
 		SOUND_VOLUME=$(($SOUND_VOLUME + 2))
 	done
+}
+
+function print_main_menu {
+	echo "1. list alarms"
+	echo "2. add alarm"
+	echo "3. delete alarm"
+	echo "4. set alarm"
+	echo "5. enable/disable alarm"
+	echo "6. exit"
 }
 
 # invoke text menu
@@ -345,6 +353,15 @@ if [ $TEXT_MENU -eq 1 ] ; then
 		mkdir -p ./crontab.bkp
 		crontab -l > ./crontab.bkp/`date +%H%M%S-%d-%m-%Y`.crontab.bkp
 	fi
+
+	# TODO check if rtcwake job exists in crontab
+	#	if yes, go on
+	#	if no, create one
+
+	# TODO Every time alarm.sh is invoked, 
+	# rtcwake wrapper routine should be invoked, if enabled.
+	# rtcwake wrapper routine browses through alarm jobs,
+	# and invoke rtcwake with corresponding argument.
 
 	while true ; do
 		echo ""
@@ -430,6 +447,7 @@ do
 
 	log ": pactl: setting the sound volume ..." 
 
+	# TODO fork and track and adjust sound volume while (true)
 	pa_increment_volume_smoothly $START_VOLUME $SOUND_VOLUME
 
 	#audtool --set-volume $SOUND_VOLUME # was not reliable
