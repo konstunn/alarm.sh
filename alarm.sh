@@ -323,7 +323,7 @@ function set_alarm {
 # $1 - start, $2 - finish 
 function pa_increment_volume_smoothly {
 	SOUND_VOLUME=$1
-	while [ $SOUND_VOLUME -lt $2 ] ; do
+	while [ $SOUND_VOLUME -le $2 ] ; do
 		# global sound adjustment command
 		pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo $SOUND_VOLUME%
 		sleep 1
