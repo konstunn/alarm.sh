@@ -349,9 +349,19 @@ if [ $TEXT_MENU -eq 1 ] ; then
 		# create one
 		echo "" | crontab -
 	else 
-		# backup crontab
-		mkdir -p ./crontab.bkp
-		crontab -l > ./crontab.bkp/`date +%H%M%S-%d-%m-%Y`.crontab.bkp
+		while true ; do
+			# backup crontab
+			read -p "Back up crontab [y/n]? " CRONTAB_BACKUP
+			if [[ $CRONTAB_BACKUP =~ ^[yY]$ ]] ; then
+				mkdir -p ./crontab.bkp
+				crontab -l > ./crontab.bkp/`date +%H%M%S-%d-%m-%Y`.crontab.bkp
+				break
+			elif ! [[ $CRONTAB_BACKUP =~ ^[nN]$ ]] ; then
+				echo "Invalid input."
+			else
+				break
+			fi
+		done
 	fi
 
 	# TODO check if rtcwake job exists in crontab
