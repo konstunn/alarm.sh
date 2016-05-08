@@ -327,7 +327,7 @@ function pa_increment_volume_smoothly {
 		# global sound adjustment command
 		pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo $SOUND_VOLUME%
 		sleep 1
-		SOUND_VOLUME=$(($SOUND_VOLUME + 2))
+		SOUND_VOLUME=$(($SOUND_VOLUME + 1))
 	done
 }
 
@@ -436,7 +436,7 @@ do
 	$PLAYER $PLAYER_OPTS "$TRACK" 2>&1 | tee -a $LOG_FILE &
 	log ": $(basename $PLAYER) started."
 
-	START_VOLUME=30
+	START_VOLUME=20
 
 	pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo $START_VOLUME%
 
