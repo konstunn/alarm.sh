@@ -27,8 +27,8 @@ PLAYER="/usr/bin/audacious"
 
 LOG_FILE="./alarm.log" # TODO specify constant absolute path
 
-TIMEOUT="5m"
-SOUND_VOLUME="60" # TODO get out
+TIMEOUT="2m"
+SOUND_VOLUME="60" # TODO get out to config file or crontab
 
 PLAY_NOW=0
 TEXT_MENU=0
@@ -140,7 +140,7 @@ function ask_check_audio_track_path {
 
 # prints alarm
 # $1 - name of existing alarm
-function select_alarm {
+function print_alarm_by_name {
 	crontab -l | grep -A 1 -e "^# alarm.sh $1$" \
 			| awk -F' |\t' \
 				'/^# alarm.sh/ { printf "%s\t",$3 }
@@ -163,7 +163,7 @@ function ask_check_alarm_spec {
 	crontab -l | grep "^# alarm.sh $NAME$" > /dev/null
 	if [ $? -eq 0 ] ; then
 		echo -e "\nAlarm '$NAME' already exists.\n"
-		select_alarm $NAME
+		print_alarm_by_name $NAME
 		return 1
 	fi
 
@@ -211,7 +211,7 @@ function add_alarm {
 }
 
 # list all alarms
-function list_alarms {
+function print_all_alarms {
 	crontab -l | grep -A 1 "^# alarm.sh" \
 		| awk -F' |\t' \
 			'BEGIN { print "name\tstate\ttime\tweekday\ttrack"; i=0 }
@@ -276,7 +276,7 @@ function set_alarm {
 		clear
 		echo ""
 		echo "Setting alarm \"$1\""
-		select_alarm $1
+		print_alarm_by_name $1
 		echo ""
 		print_set_alarm_menu
 		echo ""
@@ -382,7 +382,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 		echo ""
 
 		case "$CHOICE" in
-			1) list_alarms ;;
+			1) print_all_alarms ;;
 			2)
 				ask_check_alarm_spec NAME TIME DOW TRACK
 				if [ $? -eq 0 ] ; then 
@@ -390,7 +390,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 				fi
 			;;
 			3) 
-				list_alarms
+				print_all_alarms
 				ask_check_existing_alarm_name NAME
 				if [ $? -eq 0 ] ; then
 					delete_alarm $NAME
@@ -398,7 +398,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 				fi
 			;;
 			4)
-				list_alarms
+				print_all_alarms
 				ask_check_existing_alarm_name NAME
 				if [ $? -eq 0 ] ; then 
 					set_alarm $NAME
@@ -406,7 +406,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 				fi
 			;;
 			5)	
-				list_alarms
+				print_all_alarms
 				ask_check_existing_alarm_name NAME
 				if [ $? -eq 0 ] ; then 
 					toggle_alarm_on_off $NAME
@@ -468,8 +468,11 @@ do
 
 	log ": waiting for player to be killed ..."
 
-	sleep 5m	# temporary audacious deadlock workaround
-	killall	audacious
+	ALARM_TIMEOUT="5m" # get out to config file or crontab
+
+	sleep $ALARM_TIMEOUT # possible player deadlock workaround
+
+	killall	`basename $PLAYER`
 
 	#wait $(pidof $(basename $PLAYER))
 
@@ -479,6 +482,6 @@ do
 	notify-send OK "I WILL WAKE YOU UP AFTER $TIMEOUT ..."
 
 	log ": gone to sleep for $TIMEOUT ..."
-	sleep 2m
+	sleep $TIMEOUT
 	log ": $TIMEOUT is over."
 done
