@@ -5,6 +5,7 @@
 #	- replace audacious with more reliable audio player
 #	- integrate rtcwake
 #	- install to home dir
+#	- check if sound is muted globally and unmute if so
 
 # NOTES:
 # - audtool is not reliable (report audacious bug)
@@ -140,6 +141,7 @@ function ask_check_audio_track_path {
 
 # prints alarm
 # $1 - name of existing alarm
+# TODO: simplify, use print_all_alarms and grep by name
 function print_alarm_by_name {
 	crontab -l | grep -A 1 -e "^# alarm.sh $1$" \
 			| awk -F' |\t' \
@@ -295,6 +297,13 @@ function set_alarm {
 			2) echo "Not implemented yet"
 				;;
 			3) echo "Not implemented yet"
+
+				ask_check_audio_track_path TRACK
+				if [ $? -gt 0 ] ; then continue ; fi
+
+				crontab -l \
+					| sed -e \
+						"/^# $JOB_HEADER $1/{n;s%-t \".*\"%-t \"$TRACK\"%}" | crontab -
 				;;
 			4) 
 				ask_check_alarm_time HOURS MINUTES
