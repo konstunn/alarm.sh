@@ -18,4 +18,4 @@ Morning wake up alarm menu-driven bash script. Uses mainly cron scheduler and au
 Integrate rtcwake
 
 ### Bugs
-Many
+May be. But it yet wakes up good.
