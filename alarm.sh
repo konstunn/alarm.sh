@@ -275,6 +275,8 @@ function print_set_alarm_menu {
 # $1 - name
 function set_alarm {
 	while true ; do
+		echo ""
+		read -p "Press Enter..."
 		clear
 		echo ""
 		echo "Setting alarm \"$1\""
@@ -324,8 +326,6 @@ function set_alarm {
 			;;
 			5) return 0 ;;
 		esac
-		echo ""
-		read -p "Press Enter..."
 	done
 }
 
