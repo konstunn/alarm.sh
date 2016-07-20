@@ -11,18 +11,20 @@ Morning wake up alarm menu-driven bash script. Uses mainly cron scheduler and au
 
 ### Usage
 1. Use text menu interface to manage alarm jobs (add / remove, set, enable / disable).
-2. When the time has come to be awaken and music is playing, issue `killall audacious` and go back to sleep. :-)
-3. When your are definitely awaken, issue `killall audacious ; killall alarm.sh` and go brush your teeth. :-)
+2. issue `$ sudo rtcwake -m no -t $(date +%s -d '<time_to_wake_your_pc>'); sudo pm-suspend`
+3. When the time has come to be awaken and music is playing, issue `killall audacious` and go back to sleep. :-)
+4. When your are definitely awaken, issue `killall audacious ; killall alarm.sh` and go brush your teeth. :-)
 
 ### Dependencies
 - bash
 - gawk
+- sed
 - audacious
 - crontab
 - pulseaudio
 
 ### TODO
-Integrate rtcwake
+Integrate rtcwake, pm-suspend
 
 ### Bugs
 May be. But it yet wakes up good.
