@@ -20,22 +20,6 @@
 #		so setting it by default this way
 # - audacious falls down
 
-# select display (in case of starting gui apps)
-export DISPLAY=:0
-
-PLAYER_OPTS="-p -h"
-PLAYER="/usr/bin/audacious"
-
-LOG_FILE="./alarm.log" # TODO specify constant absolute path
-
-TIMEOUT="2m"
-SOUND_VOLUME="70" # TODO get out to config file or crontab
-
-PLAY_NOW=0
-TEXT_MENU=0
-
-export LC_TIME="en_US.utf8" # for logging
-
 function log {
 	echo "$(date +'%b %d %T') localhost: $(basename $0)$1" >> $LOG_FILE
 }
@@ -47,53 +31,6 @@ function print_help {
 		\n --track | -t	<path_to_audio_file> \
 		\n --help | -h \n"
 }
-
-# robust way to get path to itself
-SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/"$(basename $0)"
-
-cd `dirname $SELF_PATH`
-
-# if no arguments, invoke text menu
-if [ $# -eq 0 ] ; then 
-	TEXT_MENU=1
-fi
-
-# parse command line arguments
-OPTS=+h,t:,m
-LONG_OPTS="help,menu,track:"
-
-ARGS=`getopt -o $OPTS --long $LONG_OPTS \
-     -n $(basename $0) -- "$@"`
-
-# if getopt returned error, claim and exit
-if [ $? -ne 0 ] ; then
-	echo "`basename $0`: specify '--help' or '-h' option for help." >&2
-	echo "`basename $0`: terminating..." >&2
-	exit 1
-fi
-
-eval set -- "$ARGS"
-
-while true ; do
-	case "$1" in 
-		--menu | -m)
-			TEXT_MENU=1 ; shift ;;
-		--track | -t)
-			PLAY_NOW=1;	TRACK="$2" ; shift 2 ;;
-		--help | -h)
-			print_help; exit 0 ;;
-		--)
-			shift ; break ;;
-	esac
-done
-
-# claim if extra arguments and exit
-if [ $# -gt 0 ] ; then
-	echo "`basename $0`: extra arguments \"$@\"" >&2
-	echo "`basename $0`: specify '--help' or '-h' option for help." >&2
-	echo "`basename $0`: terminating..." >&2
-	exit 1
-fi
 
 # $1 - hours variable name, $2 - minutes variable name
 function ask_check_alarm_time {
@@ -350,6 +287,69 @@ function print_main_menu {
 	echo "5. enable/disable alarm"
 	echo "6. exit"
 }
+
+# select display (in case of starting gui apps)
+export DISPLAY=:0
+
+PLAYER_OPTS="-p -h"
+PLAYER="/usr/bin/audacious"
+
+LOG_FILE="./alarm.log" # TODO specify constant absolute path
+
+TIMEOUT="2m"
+SOUND_VOLUME="70" # TODO get out to config file or crontab
+
+PLAY_NOW=0
+TEXT_MENU=0
+
+export LC_TIME="en_US.utf8" # for logging
+
+# robust way to get path to itself
+SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/"$(basename $0)"
+
+cd `dirname $SELF_PATH`
+
+# if no arguments, invoke text menu
+if [ $# -eq 0 ] ; then 
+	TEXT_MENU=1
+fi
+
+# parse command line arguments
+OPTS=+h,t:,m
+LONG_OPTS="help,menu,track:"
+
+ARGS=`getopt -o $OPTS --long $LONG_OPTS \
+     -n $(basename $0) -- "$@"`
+
+# if getopt returned error, claim and exit
+if [ $? -ne 0 ] ; then
+	echo "`basename $0`: specify '--help' or '-h' option for help." >&2
+	echo "`basename $0`: terminating..." >&2
+	exit 1
+fi
+
+eval set -- "$ARGS"
+
+while true ; do
+	case "$1" in 
+		--menu | -m)
+			TEXT_MENU=1 ; shift ;;
+		--track | -t)
+			PLAY_NOW=1;	TRACK="$2" ; shift 2 ;;
+		--help | -h)
+			print_help; exit 0 ;;
+		--)
+			shift ; break ;;
+	esac
+done
+
+# claim if extra arguments and exit
+if [ $# -gt 0 ] ; then
+	echo "`basename $0`: extra arguments \"$@\"" >&2
+	echo "`basename $0`: specify '--help' or '-h' option for help." >&2
+	echo "`basename $0`: terminating..." >&2
+	exit 1
+fi
 
 # invoke text menu
 if [ $TEXT_MENU -eq 1 ] ; then
