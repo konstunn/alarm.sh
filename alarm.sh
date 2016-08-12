@@ -51,6 +51,8 @@ function print_help {
 # robust way to get path to itself
 SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/"$(basename $0)"
 
+cd `dirname $SELF_PATH`
+
 # if no arguments, invoke text menu
 if [ $# -eq 0 ] ; then 
 	TEXT_MENU=1
