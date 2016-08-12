@@ -479,7 +479,7 @@ do
 
 	log ": waiting for player to be killed ..."
 
-	ALARM_TIMEOUT="5m" # get out to config file or crontab
+	ALARM_TIMEOUT="4m" # get out to config file or crontab
 
 	sleep $ALARM_TIMEOUT # possible player deadlock workaround
 
