@@ -77,13 +77,13 @@ eval set -- "$ARGS"
 while true ; do
 	case "$1" in 
 		--menu | -m)
-			TEXT_MENU=1 ; shift 
-		;;
+			TEXT_MENU=1 ; shift ;;
 		--track | -t)
-			PLAY_NOW=1;	TRACK="$2" ; shift 2
-		;;
-		--help | -h)	print_help; exit 0 ;;
-		--)				shift ; break ;;
+			PLAY_NOW=1;	TRACK="$2" ; shift 2 ;;
+		--help | -h)
+			print_help; exit 0 ;;
+		--)
+			shift ; break ;;
 	esac
 done
 
