@@ -307,6 +307,10 @@ export LC_TIME="en_US.utf8" # for logging
 # robust way to get path to itself
 SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/"$(basename $0)"
 
+if [ -L $SELF_PATH ] ; then
+	SELF_PATH=`readlink $SELF_PATH`
+fi
+
 cd `dirname $SELF_PATH`
 
 # if no arguments, invoke text menu
