@@ -158,8 +158,8 @@ function print_all_alarms {
 			'BEGIN { print "name\tstate\ttime\tweekday\ttrack"; i=0 }
 			/^# alarm.sh/ { printf "%s\t",$3; i++ }
 			/^#?\t[0-9]/ { 
-				if ($1 == "#") printf "%s\t","off"
-				else printf "%s\t","on"
+				if ($1 == "#") printf "%s\t","\033[0;31mOFF\033[0m"
+				else printf "%s\t","\033[0;32mON\033[0m"
 				printf "%s:%s\t%s\t",$3,$2,$6;
 				match($0,/".+"/,a); print a[0] 
 			}
