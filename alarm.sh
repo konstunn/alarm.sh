@@ -288,6 +288,22 @@ function print_main_menu {
 	echo "6. exit"
 }
 
+function ask_backup_crontab
+{
+	read -p "Back up crontab [y/n]? " CRONTAB_BACKUP
+	if [[ $CRONTAB_BACKUP =~ ^[yY]$ ]] ; then
+		# back up crontab
+		mkdir -p ./crontab.bkp
+		crontab -l > ./crontab.bkp/`date +%H%M%S-%d-%m-%Y`.crontab.bkp
+		return 0
+	elif ! [[ $CRONTAB_BACKUP =~ ^[nN]$ ]] ; then
+		echo "Invalid input."
+		return 1
+	else
+		return 0
+	fi
+}
+
 # select display (in case of starting gui apps)
 export DISPLAY=:0
 
@@ -364,18 +380,9 @@ if [ $TEXT_MENU -eq 1 ] ; then
 		# create one
 		echo "" | crontab -
 	else 
-		while true ; do
-			# backup crontab
-			read -p "Back up crontab [y/n]? " CRONTAB_BACKUP
-			if [[ $CRONTAB_BACKUP =~ ^[yY]$ ]] ; then
-				mkdir -p ./crontab.bkp
-				crontab -l > ./crontab.bkp/`date +%H%M%S-%d-%m-%Y`.crontab.bkp
-				break
-			elif ! [[ $CRONTAB_BACKUP =~ ^[nN]$ ]] ; then
-				echo "Invalid input."
-			else
-				break
-			fi
+		# ask if should backup crontab
+		while ! ask_backup_crontab ; do
+			:
 		done
 	fi
 
