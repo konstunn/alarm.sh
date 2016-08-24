@@ -304,6 +304,12 @@ function ask_backup_crontab
 	fi
 }
 
+function crontab_exists
+{
+	crontab -l &>/dev/null
+	return $?
+}
+
 # select display (in case of starting gui apps)
 export DISPLAY=:0
 
@@ -374,16 +380,15 @@ fi
 # invoke text menu
 if [ $TEXT_MENU -eq 1 ] ; then
 
-	# if crontab does not exist
-	crontab -l &> /dev/null
-	if [ $? -gt 0 ] ; then
-		# create one
-		echo "" | crontab -
-	else 
+	# if crontab file exists
+	if crontab_exists ; then
 		# ask if should backup crontab
 		while ! ask_backup_crontab ; do
 			:
 		done
+	else
+		# create empty one
+		echo "" | crontab -
 	fi
 
 	# TODO check if rtcwake job exists in crontab
