@@ -458,6 +458,7 @@ if [ $PLAY_NOW -eq 0 ] ; then exit 0; fi
 
 # play now
 
+notify-send "`basename $0` started."
 log " started."
 
 while true
