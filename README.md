@@ -20,8 +20,9 @@ Morning wake up alarm menu-driven bash script. Uses mainly cron scheduler and au
 - gawk
 - sed
 - audacious
-- crontab
-- pulseaudio
+- cron (crontab utility)
+- pulseaudio-utils (pactl utility)
+- libnotify-bin (notify-send utility)
 
 ### TODO
 Integrate rtcwake, pm-suspend
