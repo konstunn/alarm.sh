@@ -280,6 +280,7 @@ function pa_increment_volume_smoothly {
 }
 
 function print_main_menu {
+	echo "Main menu"
 	echo "1. list alarms"
 	echo "2. add alarm"
 	echo "3. delete alarm"
