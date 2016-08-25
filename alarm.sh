@@ -291,13 +291,15 @@ function print_main_menu {
 
 function ask_backup_crontab
 {
-	read -p "Back up crontab [y/n]? " CRONTAB_BACKUP
-	if [[ $CRONTAB_BACKUP =~ ^[yY]$ ]] ; then
+	read -p "Back up crontab [y/n]? " DO_BACKUP
+	if [[ $DO_BACKUP =~ ^[yY]$ ]] ; then
 		# back up crontab
 		mkdir -p ./crontab.bkp
-		crontab -l > ./crontab.bkp/`date +%H%M%S-%d-%m-%Y`.crontab.bkp
+		CRONTAB_BACKUP=crontab.bkp/`date +%H%M%S-%d-%m-%Y`.crontab.bkp
+		crontab -l > ./$CRONTAB_BACKUP
+		echo -e "\ncrontab backup at $SELF_PATH/$CRONTAB_BACKUP"
 		return 0
-	elif ! [[ $CRONTAB_BACKUP =~ ^[nN]$ ]] ; then
+	elif ! [[ $DO_BACKUP =~ ^[nN]$ ]] ; then
 		echo "Invalid input."
 		return 1
 	else
