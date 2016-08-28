@@ -313,6 +313,10 @@ function crontab_exists
 	return $?
 }
 
+function create_empty_crontab {
+	echo "" | crontab -
+}
+
 # select display (in case of starting gui apps)
 export DISPLAY=:0
 
@@ -391,7 +395,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 		done
 	else
 		# create empty one
-		echo "" | crontab -
+		create_empty_crontab
 	fi
 
 	# TODO check if rtcwake job exists in crontab
