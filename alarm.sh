@@ -313,6 +313,22 @@ function crontab_exists
 	return $?
 }
 
+function rtcwake_job_exists
+{
+	RTCJOB_EXISTS=`crontab -l | grep "# rtcwake alarm.sh" | wc -l`
+	if [ $RTCJOB_EXISTS -eq 1 ] ; then
+		return true
+	else
+		return false
+	fi
+}
+
+function setup_rtcwake_job {
+	# TODO: implement crontab rtcwake job as well as
+	# creating dedicated /etc/pm/sleep.d/rtcwake
+	echo "Setting up rtcwake job is not yet implemeted."
+}
+
 function create_empty_crontab {
 	echo "" | crontab -
 }
@@ -347,8 +363,8 @@ if [ $# -eq 0 ] ; then
 fi
 
 # parse command line arguments
-OPTS=+h,t:,m
-LONG_OPTS="help,menu,track:"
+OPTS="+h,t:,m,r"
+LONG_OPTS="help,menu,track:,rtcwake"
 
 ARGS=`getopt -o $OPTS --long $LONG_OPTS \
      -n $(basename $0) -- "$@"`
@@ -370,6 +386,8 @@ while true ; do
 			TRACK="$2" ; shift 2 ;;
 		--help | -h)
 			print_help; exit 0 ;;
+		--rtcwake | -r)
+			RTCWAKE=1 ; echo Not implemented yet. ; shift ;;
 		--)
 			shift ; break ;;
 	esac
@@ -388,23 +406,27 @@ if [ $TEXT_MENU -eq 1 ] ; then
 
 	# if crontab file exists
 	if crontab_exists ; then
-		# ask if should backup crontab
 		while ! ask_backup_crontab ; do
 			:
 		done
 	else
-		# create empty one
 		create_empty_crontab
 	fi
-
-	# TODO check if rtcwake job exists in crontab
-	#	if yes, go on
-	#	if no, create one
 
 	# TODO Every time alarm.sh is invoked, 
 	# rtcwake wrapper routine should be invoked, if enabled.
 	# rtcwake wrapper routine browses through alarm jobs,
 	# and invoke rtcwake with corresponding argument.
+
+	# TODO check if rtcwake job exists in crontab
+	#	if yes, go on
+	#	if no, create one
+	if [ $EUID -eq 0 ] ; then
+		:
+		# TODO parse users' crontab
+	else
+		echo "Invoke `basename $0` as root to be sure that rtcwake job is set."
+	fi
 
 	while true ; do
 		echo ""
@@ -446,7 +468,8 @@ if [ $TEXT_MENU -eq 1 ] ; then
 					echo -e "\nSucceeded."
 				fi
 			;;
-			6) exit 0 ;;
+			6) exit 0 # TODO: rtcwake
+				;;
 			*) echo "Invalid input." ;;
 		esac
 
