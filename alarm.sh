@@ -328,7 +328,6 @@ LOG_FILE="./alarm.log" # TODO specify constant absolute path
 TIMEOUT="2m"
 SOUND_VOLUME="70" # TODO get out to config file or crontab
 
-PLAY_NOW=0
 TEXT_MENU=0
 
 export LC_TIME="en_US.utf8" # for logging
@@ -368,7 +367,7 @@ while true ; do
 		--menu | -m)
 			TEXT_MENU=1 ; shift ;;
 		--track | -t)
-			PLAY_NOW=1;	TRACK="$2" ; shift 2 ;;
+			TRACK="$2" ; shift 2 ;;
 		--help | -h)
 			print_help; exit 0 ;;
 		--)
@@ -458,7 +457,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 	done
 fi
 
-if [ $PLAY_NOW -eq 0 ] ; then exit 0; fi
+if [[ $TRACK == "" ]] ; then exit 0; fi
 
 # play now
 
