@@ -458,8 +458,15 @@ if [ $PLAY_NOW -eq 0 ] ; then exit 0; fi
 
 # play now
 
+GITSTATLN=`git status --porcelain | wc -l`
+VERSION="git-`git rev-parse --short HEAD`"
+
+if [ $GITSTATLN -ne 0 ] ; then
+	VERSION=""$VERSION"+"
+fi
+
 notify-send "`basename $0` started."
-log " started."
+log " ($VERSION) started."
 
 while true
 do 
