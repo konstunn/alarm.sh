@@ -21,7 +21,7 @@
 # - audacious falls down
 
 function log {
-	echo "$(date +'%b %d %T') localhost: $(basename $0)$1" >> $LOG_FILE
+	echo "$(date +'%b %d %T'): $(basename $0)$1" >> $LOG_FILE
 }
 
 function print_help {
