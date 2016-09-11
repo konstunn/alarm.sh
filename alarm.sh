@@ -321,7 +321,7 @@ PLAYER="/usr/bin/audacious"
 
 LOG_FILE="./alarm.log" # TODO specify constant absolute path
 
-TIMEOUT="2m"
+TIMEOUT="1m"
 SOUND_VOLUME="70" # TODO get out to config file or crontab
 
 PLAY_NOW=0
