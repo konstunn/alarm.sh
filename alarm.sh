@@ -522,4 +522,6 @@ do
 	log ": gone to sleep for $TIMEOUT ..."
 	sleep $TIMEOUT
 	log ": $TIMEOUT is over."
+
+	date '+%H часов %M минут' | festival --tts --language russian
 done
