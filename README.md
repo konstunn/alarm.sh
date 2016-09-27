@@ -8,6 +8,7 @@ Morning wake up alarm menu-driven bash script. Uses mainly cron scheduler and au
 4. Logging.
 5. Crontab backup.
 6. Desktop notifications.
+7. Time spelling.
 
 ### Usage
 1. Use text menu interface to manage alarm jobs (add / remove, set, enable / disable).
