@@ -32,3 +32,6 @@ Port to Python to make it cross-platform?
 
 ### Bugs
 Many. But it yet works and wakes up good. At least for me. I use it on a regular basis.
+
+### Contacts
+Feel free to create, open an issue if you have suggestions, questions, difficulties or problems while using alarm.sh.
