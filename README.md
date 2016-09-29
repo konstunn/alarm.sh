@@ -28,6 +28,7 @@ Morning wake up alarm menu-driven bash script. Uses mainly cron scheduler and au
 
 ### TODO
 Integrate rtcwake, pm-suspend
+Port to Python to make it cross-platform?
 
 ### Bugs
 May be. But it yet wakes up good.
