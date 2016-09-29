@@ -31,4 +31,4 @@ Integrate rtcwake, pm-suspend
 Port to Python to make it cross-platform?
 
 ### Bugs
-May be. But it yet wakes up good.
+Many. But it yet works and wakes up good. At least for me. I use it on a regular basis.
