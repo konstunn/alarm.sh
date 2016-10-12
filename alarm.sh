@@ -41,7 +41,7 @@ function ask_check_alarm_time {
 	read -p "Enter alarm time in 'hh:mm' format: " TIME
 
 	if ! [[ $TIME =~ ^[0-9]{1,2}:[0-9]{2}$ ]] ; then
-		echo Invalid time input \'$TIME\'
+		echo_red "Invalid time input \'$TIME\'"
 		return 1
 	fi
 
@@ -49,7 +49,7 @@ function ask_check_alarm_time {
 	MINUTES=$(echo $TIME | awk -F':' '{print $2}')
 
 	if [ $HOURS -gt 23 -o $MINUTES -gt 59 ] ; then
-		echo Invalid time input \'$TIME\'
+		echo_red "Invalid time input \'$TIME\'"
 		return 1
 	fi
 
@@ -63,7 +63,7 @@ function ask_check_alarm_dow {
 
 	# validate DOW
 	if ! [[ $DOW =~ ^([1-7])|([1-7]-[1-7])(,\1)+$ ]] ; then
-		echo "Invalid input '$DOW'"
+		echo_red "Invalid input '$DOW'"
 		return 1
 	fi
 
@@ -75,7 +75,7 @@ function ask_check_audio_track_path {
 	read -ep "Enter path to audio track: " TRACK
 
 	if ! [ -e "$TRACK" ] ; then
-		echo "No such a readable file '$TRACK'"
+		echo_red "No such a readable file '$TRACK'"
 		return 1
 	fi
 
@@ -101,13 +101,13 @@ function ask_check_alarm_spec {
 	read -p "Enter name for alarm to add: " NAME
 
 	if ! [[ -n $NAME ]] ; then
-		echo Empty name not allowed.
+		echo_red "Empty name not allowed."
 		return 1
 	fi
 	
 	crontab -l | grep "^# alarm.sh $NAME$" > /dev/null
 	if [ $? -eq 0 ] ; then
-		echo -e "\nAlarm '$NAME' already exists.\n"
+		echo_red "\nAlarm '$NAME' already exists.\n"
 		print_alarm_by_name $NAME
 		return 1
 	fi
@@ -181,13 +181,13 @@ function ask_check_existing_alarm_name {
 	read -p "Enter alarm name: " NAME
 
 	if ! [[ -n $NAME ]] ; then
-		echo Empty name not allowed. Cancelled.
+		echo_red "Empty name not allowed. Cancelled."
 		return 1
 	fi
 	
 	crontab -l | grep "^# `basename $0` $NAME$" > /dev/null
 	if [ $? -gt 0 ] ; then
-		echo "Alarm '$NAME' does not exist."
+		echo_red "Alarm '$NAME' does not exist."
 		return 1
 	fi
 	eval $1=$NAME
@@ -239,9 +239,9 @@ function set_alarm {
 				if [ $? -gt 0 ] ; then echo "Fail"; continue 
 				else echo "Success" ; fi
 				;;
-			2) echo "Not implemented yet"
+			2) echo_red "Not implemented yet"
 				;;
-			3) echo "Not implemented yet"
+			3) echo_red"Not implemented yet"
 
 				ask_check_audio_track_path TRACK
 				if [ $? -gt 0 ] ; then continue ; fi
@@ -264,7 +264,7 @@ function set_alarm {
 					| sed -e \
 						"/^# $JOB_HEADER $1$/{n;s%^\(\#\?\).*$%\1\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"%}" \
 					| crontab -
-				if [ $? -gt 0 ] ; then echo "Fail"
+				if [ $? -gt 0 ] ; then echo_red "Fail"
 				else echo "Success" ; fi
 			;;
 			5) return 0 ;;
@@ -304,7 +304,7 @@ function ask_backup_crontab
 		echo -e "\ncrontab backup at $SELF_PATH/$CRONTAB_BACKUP"
 		return 0
 	elif ! [[ $DO_BACKUP =~ ^[nN]$ ]] ; then
-		echo "Invalid input."
+		echo_red "Invalid input."
 		return 1
 	else
 		return 0
@@ -448,7 +448,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 				fi
 			;;
 			6) exit 0 ;;
-			*) echo "Invalid input." ;;
+			*) echo_red "Invalid input." ;;
 		esac
 
 		echo ""
