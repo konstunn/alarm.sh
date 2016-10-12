@@ -32,6 +32,10 @@ function print_help {
 		\n --help | -h \n"
 }
 
+function echo_red {
+	echo -e "\033[0;31m$1\033[0m"
+}
+
 # $1 - hours variable name, $2 - minutes variable name
 function ask_check_alarm_time {
 	read -p "Enter alarm time in 'hh:mm' format: " TIME
