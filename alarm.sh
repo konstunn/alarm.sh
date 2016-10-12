@@ -248,7 +248,8 @@ function set_alarm {
 
 				crontab -l \
 					| sed -e \
-						"/^# $JOB_HEADER $1/{n;s%-t \".*\"%-t \"$TRACK\"%}" | crontab -
+						"/^# $JOB_HEADER $1/{n;s%-t \".*\"%-t \"$TRACK\"%}" \
+						| crontab -
 				;;
 			4) 
 				ask_check_alarm_time HOURS MINUTES
@@ -277,7 +278,8 @@ function pa_increment_volume_smoothly {
 	SOUND_VOLUME=$1
 	while [ $SOUND_VOLUME -le $2 ] ; do
 		# global sound adjustment command
-		pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo $SOUND_VOLUME%
+		pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo \
+			$SOUND_VOLUME%
 		sleep 1
 		SOUND_VOLUME=$(($SOUND_VOLUME + 1))
 	done
