@@ -281,7 +281,7 @@ function pa_increment_volume_smoothly {
 		pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo \
 			$SOUND_VOLUME%
 		sleep 1
-		SOUND_VOLUME=$(($SOUND_VOLUME + 1))
+		SOUND_VOLUME=$(($SOUND_VOLUME + $SND_VOL_INC_VAL))
 	done
 }
 
@@ -329,6 +329,7 @@ LOG_FILE="./alarm.log" # TODO specify constant absolute path
 
 TIMEOUT="1m"
 SOUND_VOLUME="70" # TODO get out to config file or crontab
+SND_VOL_INC_VAL=2
 
 PLAY_NOW=0
 TEXT_MENU=0
