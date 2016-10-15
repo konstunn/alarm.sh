@@ -329,6 +329,7 @@ LOG_FILE="./alarm.log" # TODO specify constant absolute path
 
 TIMEOUT="1m"
 SOUND_VOLUME="70" # TODO get out to config file or crontab
+START_VOLUME=30
 SND_VOL_INC_VAL=2
 
 PLAY_NOW=0
@@ -480,8 +481,6 @@ do
 	log ": starting $(basename $PLAYER) ..."
 	$PLAYER $PLAYER_OPTS "$TRACK" 2>&1 | tee -a $LOG_FILE &
 	log ": $(basename $PLAYER) started."
-
-	START_VOLUME=20
 
 	pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo $START_VOLUME%
 
