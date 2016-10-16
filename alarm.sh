@@ -235,6 +235,7 @@ function crontab_set_all {
 
 # $1 - name
 function set_alarm {
+	NAME=$1
 	while true ; do
 		echo ""
 		read -p "Press Enter..."
@@ -253,7 +254,8 @@ function set_alarm {
 			1) 
 				ask_check_alarm_time HOURS MINUTES
 				if [ $? -gt 0 ] ; then continue; fi
-				set_alarm_time $1 $HOURS $MINUTES	
+
+				set_alarm_time $NAME $HOURS $MINUTES
 				if [ $? -gt 0 ] ; then echo "Fail"; continue 
 				else echo "Success" ; fi
 				;;
@@ -279,6 +281,7 @@ function set_alarm {
 					| sed -e \
 						"/^# $JOB_HEADER $1$/{n;s%^\(\#\?\).*$%\1\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"%}" \
 					| crontab -
+
 				if [ $? -gt 0 ] ; then echo_red "Fail"
 				else echo "Success" ; fi
 			;;
@@ -309,8 +312,7 @@ function print_main_menu {
 	echo "6. exit"
 }
 
-function ask_backup_crontab
-{
+function ask_backup_crontab {
 	read -p "Back up crontab [y/n]? " DO_BACKUP
 	if [[ $DO_BACKUP =~ ^[yY]$ ]] ; then
 		# back up crontab
@@ -327,8 +329,7 @@ function ask_backup_crontab
 	fi
 }
 
-function crontab_exists
-{
+function crontab_exists {
 	crontab -l &>/dev/null
 	return $?
 }
