@@ -259,8 +259,7 @@ function set_alarm {
 				;;
 			2) echo_red "Not implemented yet"
 				;;
-			3) echo_red"Not implemented yet"
-
+			3)
 				ask_check_audio_track_path TRACK
 				if [ $? -gt 0 ] ; then continue ; fi
 
