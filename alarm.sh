@@ -215,6 +215,24 @@ function print_set_alarm_menu {
 	echo "5. exit"
 }
 
+# $1 - alarm job name, $2 - track filename
+function crontab_set_track {
+	NAME=$1
+	TRACK=$2
+	crontab -l \
+		| sed -e \
+			"/^# $JOB_HEADER $NAME/{n;s%-t \".*\"%-t \"$TRACK\"%}" \
+				| crontab -
+}
+
+# $1 - alarm job name
+function crontab_set_all {
+	crontab -l \
+		| sed -e \
+			"/^# $JOB_HEADER $1$/{n;s%^\(\#\?\).*$%\1\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"%}" \
+				| crontab -
+}
+
 # $1 - name
 function set_alarm {
 	while true ; do
@@ -246,10 +264,7 @@ function set_alarm {
 				ask_check_audio_track_path TRACK
 				if [ $? -gt 0 ] ; then continue ; fi
 
-				crontab -l \
-					| sed -e \
-						"/^# $JOB_HEADER $1/{n;s%-t \".*\"%-t \"$TRACK\"%}" \
-						| crontab -
+				crontab_set_track $NAME $TRACK
 				;;
 			4) 
 				ask_check_alarm_time HOURS MINUTES
