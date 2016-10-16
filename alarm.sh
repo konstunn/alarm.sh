@@ -234,7 +234,7 @@ function crontab_set_all {
 }
 
 # $1 - name
-function set_alarm {
+function ask_check_set_alarm {
 	NAME=$1
 	while true ; do
 		echo ""
@@ -454,7 +454,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 				print_all_alarms
 				ask_check_existing_alarm_name NAME
 				if [ $? -eq 0 ] ; then 
-					set_alarm $NAME
+					ask_check_set_alarm $NAME
 					#if [ $? -eq 0 ] ; then echo "Success" ; fi
 				fi
 			;;
