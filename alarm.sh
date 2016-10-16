@@ -334,6 +334,10 @@ function crontab_exists {
 	return $?
 }
 
+function create_empty_crontab {
+	echo "" | crontab -
+}
+
 # select display (in case of starting gui apps)
 export DISPLAY=:0
 
@@ -347,7 +351,6 @@ SOUND_VOLUME="70" # TODO get out to config file or crontab
 START_VOLUME=30
 SND_VOL_INC_VAL=2
 
-PLAY_NOW=0
 TEXT_MENU=0
 
 export LC_TIME="en_US.utf8" # for logging
@@ -387,7 +390,7 @@ while true ; do
 		--menu | -m)
 			TEXT_MENU=1 ; shift ;;
 		--track | -t)
-			PLAY_NOW=1;	TRACK="$2" ; shift 2 ;;
+			TRACK="$2" ; shift 2 ;;
 		--help | -h)
 			print_help; exit 0 ;;
 		--)
@@ -414,7 +417,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 		done
 	else
 		# create empty one
-		echo "" | crontab -
+		create_empty_crontab
 	fi
 
 	# TODO check if rtcwake job exists in crontab
@@ -477,7 +480,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 	done
 fi
 
-if [ $PLAY_NOW -eq 0 ] ; then exit 0; fi
+if [[ $TRACK == "" ]] ; then exit 0; fi
 
 # play now
 
