@@ -265,7 +265,7 @@ function ask_check_set_alarm {
 				ask_check_audio_track_path TRACK
 				if [ $? -gt 0 ] ; then continue ; fi
 
-				crontab_set_track $NAME $TRACK
+				crontab_set_track $NAME "$TRACK"
 				;;
 			4) 
 				ask_check_alarm_time HOURS MINUTES
