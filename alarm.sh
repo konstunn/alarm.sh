@@ -500,7 +500,8 @@ do
 	$PLAYER $PLAYER_OPTS "$TRACK" 2>&1 | tee -a $LOG_FILE &
 	log ": $(basename $PLAYER) started."
 
-	pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo $START_VOLUME%
+	pactl set-sink-volume alsa_output.pci-0000_00_1b.0.analog-stereo \
+		$START_VOLUME%
 
 	# take a break before call audtool
 	sleep 5 
