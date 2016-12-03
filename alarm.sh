@@ -146,8 +146,11 @@ function add_alarm {
 
 	TRACK="$4"
 
+	STRING="# $JOB_HEADER $1\n\t$MINUTES\t$HOURS\t*\t*\t$DOW\t$SELF_PATH "
+	STRING+="-t \"$TRACK\"\n"
+
 	(crontab -l 
-	echo -e "# $JOB_HEADER $1\n\t$MINUTES\t$HOURS\t*\t*\t$DOW\t$SELF_PATH -t \"$TRACK\"\n") \
+	echo -e "$STRING") \
 		| crontab -
 
 	if [ $? -eq 0 ] ; then
@@ -200,9 +203,10 @@ function delete_alarm {
 
 # $1 - alarm name, $2 - hours, $2 - minutes
 function set_alarm_time {
+	STRING="/^# $JOB_HEADER $1$/{n;s%^\(\#\?\)\t[^ \t]\+\t[^ \t]\+%\1\t$3\t$2%}"
 	crontab -l \
 		| sed -e \
-			"/^# $JOB_HEADER $1$/{n;s%^\(\#\?\)\t[^ \t]\+\t[^ \t]\+%\1\t$3\t$2%}" \
+			"$STRING" \
 		| crontab -
 	return $?
 }
@@ -227,9 +231,11 @@ function crontab_set_track {
 
 # $1 - alarm job name
 function crontab_set_all {
+	STRING="/^# $JOB_HEADER $1$/{n;s%^\(\#\?\).*$%\1\t$MINUTES\t$HOURS"
+	STRING+="\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"%}"
 	crontab -l \
 		| sed -e \
-			"/^# $JOB_HEADER $1$/{n;s%^\(\#\?\).*$%\1\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"%}" \
+			"$STRING" \
 				| crontab -
 }
 
@@ -277,9 +283,12 @@ function ask_check_set_alarm {
 				ask_check_audio_track_path TRACK
 				if [ $? -gt 0 ] ; then continue ; fi
 
+				STRING="/^# $JOB_HEADER $1$/{n;s%^\(\#\?\).*$%\1\t$MINUTES\t"
+				STRING+="$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"%}"
+
 				crontab -l \
 					| sed -e \
-						"/^# $JOB_HEADER $1$/{n;s%^\(\#\?\).*$%\1\t$MINUTES\t$HOURS\t\*\t\*\t$DOW\t$SELF_PATH -t \"$TRACK\"%}" \
+						"$STRING" \
 					| crontab -
 
 				if [ $? -gt 0 ] ; then echo_red "Fail"
