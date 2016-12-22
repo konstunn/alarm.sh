@@ -356,7 +356,7 @@ PLAYER="/usr/bin/audacious"
 LOG_FILE="./alarm.log" # TODO specify constant absolute path
 
 TIMEOUT="1m"
-SOUND_VOLUME="70" # TODO get out to config file or crontab
+FINAL_VOLUME="70" # TODO get out to config file or crontab
 START_VOLUME=30
 SND_VOL_INC_VAL=2
 
@@ -530,7 +530,7 @@ do
 	log ": pactl: setting the sound volume ..." 
 
 	# TODO fork and track and adjust sound volume while (true)
-	pa_increment_volume_smoothly $START_VOLUME $SOUND_VOLUME
+	pa_increment_volume_smoothly $START_VOLUME $FINAL_VOLUME
 
 	#audtool --set-volume $SOUND_VOLUME # was not reliable
 	log ": pactl: sound volume is set."
