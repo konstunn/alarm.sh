@@ -172,7 +172,7 @@ function print_all_alarms {
 				printf "%s:%s\t%s\t",$3,$2,$6;
 				match($0,/".+"/,a); print a[0] 
 			}
-			END { if (i == 0) print "\nNo alarms." }'
+			END { if (i == 0) print "\033[0;31mNo alarms.\033[0m" }'
 }
 
 # $1 - existing alarm name
