@@ -350,6 +350,19 @@ function create_empty_crontab {
 	echo "" | crontab -
 }
 
+function check_prompt_audio_group {
+	groups | grep audio
+
+	STATUS=$?
+
+	if [ $STATUS -ne 0 ] ; then
+		echo -e "\033[0;31m\nIt is much recommended to be a member of audio" \
+			"group, but you are not!\033[0m"
+		echo -e "\033[0;31mAdd your user account to audio group or ask your" \
+			"system administrator to do that.\033[0m"
+	fi
+}
+
 # select display (in case of starting gui apps)
 export DISPLAY=:0
 
@@ -441,6 +454,8 @@ if [ $TEXT_MENU -eq 1 ] ; then
 	# rtcwake wrapper routine should be invoked, if enabled.
 	# rtcwake wrapper routine browses through alarm jobs,
 	# and invoke rtcwake with corresponding argument.
+
+	check_prompt_audio_group
 
 	while true ; do
 		echo ""
