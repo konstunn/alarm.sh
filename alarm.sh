@@ -45,8 +45,8 @@ function ask_check_alarm_time {
 		return 1
 	fi
 
-	HOURS=$(echo $TIME | awk -F':' '{print $1}')
-	MINUTES=$(echo $TIME | awk -F':' '{print $2}')
+	HOURS=$(echo $TIME | gawk -F':' '{print $1}')
+	MINUTES=$(echo $TIME | gawk -F':' '{print $2}')
 
 	if [ $HOURS -gt 23 -o $MINUTES -gt 59 ] ; then
 		echo_red "Invalid time input \'$TIME\'"
@@ -87,7 +87,7 @@ function ask_check_audio_track_path {
 # TODO: simplify, use print_all_alarms and grep by name
 function print_alarm_by_name {
 	crontab -l | grep -A 1 -e "^# alarm.sh $1$" \
-			| awk -F' |\t' \
+			| gawk -F' |\t' \
 				'/^# alarm.sh/ { printf "%s\t",$3 }
 				/^#?\t[0-9]/ { printf "%s:%s\t%s\t",$3,$2,$6;
 					match($0,/\".+\"/,a); print a[0] }'
@@ -139,8 +139,8 @@ JOB_HEADER="alarm.sh"
 # $3 - crontab day of week
 # $4 - path to track 
 function add_alarm {
-	HOURS=$(echo $2 | awk -F':' '{print $1}')
-	MINUTES=$(echo $2 | awk -F':' '{print $2}')
+	HOURS=$(echo $2 | gawk -F':' '{print $1}')
+	MINUTES=$(echo $2 | gawk -F':' '{print $2}')
 
 	DOW=$3 # crontab day of week 
 
@@ -161,7 +161,7 @@ function add_alarm {
 # list all alarms
 function print_all_alarms {
 	crontab -l | grep -A 1 "^# alarm.sh" \
-		| awk -F' |\t' \
+		| gawk -F' |\t' \
 			'BEGIN { print "name\tstate\ttime\tweekday\ttrack"; i=0 }
 			/^# alarm.sh/ { printf "%s\t",$3; i++ }
 			/^#?\t[0-9]/ { 
