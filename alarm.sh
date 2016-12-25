@@ -41,7 +41,7 @@ function ask_check_alarm_time {
 	read -p "Enter alarm time in 'hh:mm' format: " TIME
 
 	if ! [[ $TIME =~ ^[0-9]{1,2}:[0-9]{2}$ ]] ; then
-		echo_red "Invalid time input \'$TIME\'"
+		echo_red "Invalid time input '$TIME'"
 		return 1
 	fi
 
@@ -49,7 +49,7 @@ function ask_check_alarm_time {
 	MINUTES=$(echo $TIME | gawk -F':' '{print $2}')
 
 	if [ $HOURS -gt 23 -o $MINUTES -gt 59 ] ; then
-		echo_red "Invalid time input \'$TIME\'"
+		echo_red "Invalid time input '$TIME'"
 		return 1
 	fi
 
@@ -154,7 +154,7 @@ function add_alarm {
 		| crontab -
 
 	if [ $? -eq 0 ] ; then
-		echo -e "\nAlarm was added"
+		echo -e "\n\033[0;32mAlarm was added.\033[0m"
 	fi
 }
 
@@ -314,7 +314,7 @@ function pa_increment_volume_smoothly {
 }
 
 function print_main_menu {
-	echo "Main menu"
+	echo -e "\nMain menu\n"
 	echo "1. list alarms"
 	echo "2. add alarm"
 	echo "3. delete alarm"
@@ -324,7 +324,8 @@ function print_main_menu {
 }
 
 function ask_backup_crontab {
-	read -p "Back up crontab [y/n]? " DO_BACKUP
+	echo ""
+	read -p "Back up existing crontab [y/n]? " DO_BACKUP
 	if [[ $DO_BACKUP =~ ^[yY]$ ]] ; then
 		# back up crontab
 		mkdir -p ./crontab.bkp
@@ -429,6 +430,7 @@ if [ $TEXT_MENU -eq 1 ] ; then
 	else
 		# create empty one
 		create_empty_crontab
+		echo -e "\nNo crontab found. Created empty one."
 	fi
 
 	# TODO check if rtcwake job exists in crontab
