@@ -162,9 +162,11 @@ function add_alarm {
 function print_all_alarms {
 	crontab -l | grep -A 1 "^# alarm.sh" \
 		| gawk -F' |\t' \
-			'BEGIN { print "name\tstate\ttime\tweekday\ttrack"; i=0 }
+			'BEGIN { i=0 }
 			/^# alarm.sh/ { printf "%s\t",$3; i++ }
 			/^#?\t[0-9]/ { 
+				if (i == 0)
+					print "name\tstate\ttime\tweekday\ttrack"
 				if ($1 == "#") printf "%s\t","\033[0;31mOFF\033[0m"
 				else printf "%s\t","\033[0;32mON\033[0m"
 				printf "%s:%s\t%s\t",$3,$2,$6;
